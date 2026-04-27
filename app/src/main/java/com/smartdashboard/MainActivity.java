@@ -35,10 +35,11 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private TextView clockText, dateText, weatherText, calendarMonth, selectedDayTitle;
+    private TextView clockText, dateText, weatherIcon, weatherTemp, weatherDesc, weatherWind;
+    private TextView calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
-    private LinearLayout dayEventsPanel;
+    private LinearLayout dayEventsPanel, forecastContainer;
     private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth;
     private Handler clockHandler, weatherHandler;
     private SharedPreferences prefs;
@@ -51,7 +52,6 @@ public class MainActivity extends Activity {
     private CalendarAdapter calendarAdapter;
     private String selectedDate = null;
 
-    // Classi interne per dati strutturati
     static class TodoItem {
         String text;
         boolean done;
@@ -72,12 +72,16 @@ public class MainActivity extends Activity {
 
         clockText = (TextView) findViewById(R.id.clock);
         dateText = (TextView) findViewById(R.id.date);
-        weatherText = (TextView) findViewById(R.id.weatherText);
+        weatherIcon = (TextView) findViewById(R.id.weatherIcon);
+        weatherTemp = (TextView) findViewById(R.id.weatherTemp);
+        weatherDesc = (TextView) findViewById(R.id.weatherDesc);
+        weatherWind = (TextView) findViewById(R.id.weatherWind);
         calendarMonth = (TextView) findViewById(R.id.calendarMonth);
         calendarGrid = (GridView) findViewById(R.id.calendarGrid);
         todoList = (ListView) findViewById(R.id.todoList);
         dayEventsList = (ListView) findViewById(R.id.dayEventsList);
         dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel);
+        forecastContainer = (LinearLayout) findViewById(R.id.forecastContainer);
         selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
         btnAddEvt = (Button) findViewById(R.id.btnAddEvt);
         btnAddTodo = (Button) findViewById(R.id.btnAddTodo);
@@ -99,7 +103,7 @@ public class MainActivity extends Activity {
         loadWeather();
         startWeatherRefresh();
 
-        // Pulsanti
+        // Pulsanti navigazione
         btnAddEvt.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showAddEventDialog(selectedDate); }
         });
@@ -107,15 +111,20 @@ public class MainActivity extends Activity {
             @Override public void onClick(View v) { showAddTodoDialog(); }
         });
         btnPrevMonth.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); }
+            @Override public void onClick(View v) { 
+                currentCal.add(Calendar.MONTH, -1); 
+                updateCalendarDisplay(); 
+            }
         });
         btnNextMonth.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); }
+            @Override public void onClick(View v) { 
+                currentCal.add(Calendar.MONTH, 1); 
+                updateCalendarDisplay(); 
+            }
         });
     }
 
     private void loadData() {
-        // Carica notes
         try {
             String json = prefs.getString("todos", "[]");
             JSONArray arr = new JSONArray(json);
@@ -126,7 +135,6 @@ public class MainActivity extends Activity {
             }
         } catch(Exception e) { todos = new ArrayList<TodoItem>(); }
 
-        // Carica eventi per data
         eventsByDate = new HashMap<String, ArrayList<EventItem>>();
         try {
             String json = prefs.getString("events_map", "{}");
@@ -149,7 +157,6 @@ public class MainActivity extends Activity {
     }
 
     private void saveData() {
-        // Salva notes
         try {
             JSONArray arr = new JSONArray();
             for(TodoItem t : todos) {
@@ -161,7 +168,6 @@ public class MainActivity extends Activity {
             prefs.edit().putString("todos", arr.toString()).commit();
         } catch(Exception e){}
 
-        // Salva eventi
         try {
             JSONObject obj = new JSONObject();
             for(String date : eventsByDate.keySet()) {
@@ -186,7 +192,7 @@ public class MainActivity extends Activity {
         dayEventsList.setAdapter(dayEventsAdapter);
     }
 
-    // Adapter per Note con pulsanti ✅ e 🗑️ visibili
+    // Adapter Note con pulsanti ✅ e 🗑️
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos.size(); }
         @Override public Object getItem(int pos) { return todos.get(pos); }
@@ -198,7 +204,6 @@ public class MainActivity extends Activity {
             row.setPadding(4,3,4,3);
             row.setBackgroundColor(Color.parseColor("#1a1a2e"));
             
-            // Checkbox button
             Button btnCheck = new Button(MainActivity.this);
             btnCheck.setText(todos.get(position).done ? "✅" : "⬜");
             btnCheck.setTextSize(14);
@@ -206,23 +211,23 @@ public class MainActivity extends Activity {
             btnCheck.setHeight(35);
             btnCheck.setBackgroundColor(Color.TRANSPARENT);
             btnCheck.setTextColor(Color.parseColor("#ffd700"));
+            btnCheck.setClickable(true);
+            btnCheck.setFocusable(true);
             btnCheck.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     todos.get(position).done = !todos.get(position).done;
-                    saveData(); notifyDataSetChanged();
+                    saveData(); 
+                    notifyDataSetChanged();
                 }
             });
             
-            // Text
             TextView tv = new TextView(MainActivity.this);
-            String text = todos.get(position).text;
-            tv.setText(text);
+            tv.setText(todos.get(position).text);
             tv.setTextColor(todos.get(position).done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e0e0f0"));
             tv.setGravity(Gravity.CENTER_VERTICAL);
             tv.setPadding(6,0,0,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             
-            // Delete button
             Button btnDel = new Button(MainActivity.this);
             btnDel.setText("🗑️");
             btnDel.setTextSize(12);
@@ -230,10 +235,13 @@ public class MainActivity extends Activity {
             btnDel.setHeight(30);
             btnDel.setBackgroundColor(Color.TRANSPARENT);
             btnDel.setTextColor(Color.parseColor("#ff6b6b"));
+            btnDel.setClickable(true);
+            btnDel.setFocusable(true);
             btnDel.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     todos.remove(position);
-                    saveData(); notifyDataSetChanged();
+                    saveData(); 
+                    notifyDataSetChanged();
                 }
             });
             
@@ -244,7 +252,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter per Eventi del giorno con pulsanti ✅ e 🗑️
+    // Adapter Eventi giorno con pulsanti
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents.size(); }
         @Override public Object getItem(int pos) { return dayEvents.get(pos); }
@@ -263,10 +271,11 @@ public class MainActivity extends Activity {
             btnCheck.setHeight(30);
             btnCheck.setBackgroundColor(Color.TRANSPARENT);
             btnCheck.setTextColor(Color.parseColor("#ffd700"));
+            btnCheck.setClickable(true);
+            btnCheck.setFocusable(true);
             btnCheck.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     dayEvents.get(position).done = !dayEvents.get(position).done;
-                    // Salva anche nella mappa principale
                     if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
                         saveData();
                         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
@@ -291,13 +300,19 @@ public class MainActivity extends Activity {
             btnDel.setHeight(25);
             btnDel.setBackgroundColor(Color.TRANSPARENT);
             btnDel.setTextColor(Color.parseColor("#ff6b6b"));
+            btnDel.setClickable(true);
+            btnDel.setFocusable(true);
             btnDel.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
                         eventsByDate.get(selectedDate).remove(position);
+                        dayEvents.remove(position);
                         saveData();
-                        updateDayEventsDisplay();
+                        notifyDataSetChanged();
                         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
+                        if(dayEvents.isEmpty()) {
+                            dayEventsPanel.setVisibility(View.GONE);
+                        }
                     }
                 }
             });
@@ -322,7 +337,8 @@ public class MainActivity extends Activity {
                     String val = input.getText().toString().trim();
                     if(!val.isEmpty()) {
                         todos.add(0, new TodoItem(val, false));
-                        saveData(); todoAdapter.notifyDataSetChanged();
+                        saveData(); 
+                        todoAdapter.notifyDataSetChanged();
                     }
                 }
             }).setNegativeButton("Annulla", null).show();
@@ -339,7 +355,6 @@ public class MainActivity extends Activity {
         
         if(preselectedDate != null) {
             dateInput.setText(preselectedDate);
-            dateInput.setEnabled(false);
         } else {
             dateInput.setText(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
         }
@@ -369,14 +384,18 @@ public class MainActivity extends Activity {
                         eventsByDate.get(date).add(new EventItem(time, desc, false));
                         saveData();
                         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
-                        if(date.equals(selectedDate)) updateDayEventsDisplay();
+                        if(date.equals(selectedDate)) {
+                            dayEvents = eventsByDate.get(date);
+                            dayEventsPanel.setVisibility(View.VISIBLE);
+                            dayEventsAdapter.notifyDataSetChanged();
+                        }
                     }
                 }
             }).setNegativeButton("Annulla", null).show();
     }
 
     private void updateDayEventsDisplay() {
-        if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
+        if(selectedDate != null && eventsByDate.containsKey(selectedDate) && !eventsByDate.get(selectedDate).isEmpty()) {
             dayEvents = eventsByDate.get(selectedDate);
             String[] months = {"Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"};
             String displayDate = selectedDate.substring(8)+" "+months[Integer.parseInt(selectedDate.substring(5,7))-1];
@@ -394,20 +413,22 @@ public class MainActivity extends Activity {
         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
     }
 
-    // Adapter per griglia calendario con giorni GRANDI
+    // Adapter Calendario con click funzionante
     private class CalendarAdapter extends BaseAdapter {
-        @Override public int getCount() { return 42; } // 6 righe x 7 giorni
+        @Override public int getCount() { return 42; }
         @Override public Object getItem(int pos) { return null; }
         @Override public long getItemId(int pos) { return 0; }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            LinearLayout cell = new LinearLayout(MainActivity.this);
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            final LinearLayout cell = new LinearLayout(MainActivity.this);
             cell.setOrientation(LinearLayout.VERTICAL);
             cell.setGravity(Gravity.CENTER);
             cell.setPadding(2,3,2,3);
             cell.setBackgroundColor(Color.parseColor("#1a1a2e"));
-            cell.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, 55)); // CELLE ALTE 55px!
+            cell.setClickable(true);
+            cell.setFocusable(true);
+            cell.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, 55));
             
             Calendar cal = (Calendar) currentCal.clone();
             cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -416,14 +437,14 @@ public class MainActivity extends Activity {
             int dayNum = position - offset + 1;
             
             cal.add(Calendar.DAY_OF_MONTH, position - offset);
-            String dateKey = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
+            final String dateKey = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
             boolean hasEvents = eventsByDate.containsKey(dateKey) && !eventsByDate.get(dateKey).isEmpty();
             boolean isCurrentMonth = cal.get(Calendar.MONTH) == currentCal.get(Calendar.MONTH);
             boolean isToday = dateKey.equals(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
             
             TextView tvDay = new TextView(MainActivity.this);
             tvDay.setGravity(Gravity.CENTER);
-            tvDay.setTextSize(16); // FONT GRANDE!
+            tvDay.setTextSize(16);
             tvDay.setTextColor(Color.parseColor("#b0b0c0"));
             tvDay.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
             
@@ -437,22 +458,26 @@ public class MainActivity extends Activity {
                 tvDay.setText("");
                 dot.setText("");
                 cell.setBackgroundColor(Color.parseColor("#0f0f1a"));
+                cell.setEnabled(false);
             } else {
                 tvDay.setText(String.valueOf(dayNum));
                 if(isToday) {
                     tvDay.setTextColor(Color.parseColor("#ffd700"));
                     tvDay.setText("●"+dayNum);
+                    cell.setBackgroundColor(Color.parseColor("#2a2a4a"));
                 } else if(hasEvents) {
                     tvDay.setTextColor(Color.parseColor("#ffd700"));
                     dot.setText("●");
                 }
+                cell.setEnabled(true);
             }
             
-            final String clickDate = dateKey;
             cell.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    selectedDate = clickDate;
-                    updateDayEventsDisplay();
+                    if(cell.isEnabled()) {
+                        selectedDate = dateKey;
+                        updateDayEventsDisplay();
+                    }
                 }
             });
             
@@ -478,7 +503,6 @@ public class MainActivity extends Activity {
             @Override
             protected String doInBackground(Void... params) {
                 try {
-                    // wttr.in con formato JSON per vento
                     HttpURLConnection conn = (HttpURLConnection) new URL("http://wttr.in/Foggia,Italy?format=j1&lang=it").openConnection();
                     conn.setRequestMethod("GET");
                     conn.setConnectTimeout(5000);
@@ -492,27 +516,85 @@ public class MainActivity extends Activity {
             }
             @Override
             protected void onPostExecute(String result) {
-                if (result.equals("ERRORE")) { weatherText.setText("❌ Offline"); return; }
+                if (result.equals("ERRORE")) { 
+                    weatherIcon.setText("❌"); 
+                    weatherTemp.setText("Offline");
+                    return; 
+                }
                 try {
                     JSONObject json = new JSONObject(result);
                     JSONObject cur = json.getJSONArray("current_condition").getJSONObject(0);
                     JSONArray weather = json.getJSONArray("weather");
                     
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("✨ ").append(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")).append("\n");
-                    sb.append("🌡️ ").append(cur.getString("temp_C")).append("°C  ");
-                    sb.append("💧 ").append(cur.getString("humidity")).append("%\n");
-                    sb.append("💨 ").append(cur.getString("windspeedKmph")).append(" km/h ");
-                    sb.append(cur.getString("winddir16Point")).append("\n\n");
-                    sb.append("📅 Prossimi 3 giorni:\n");
-                    for (int i = 0; i < Math.min(3, weather.length()); i++) {
+                    // Icona meteo
+                    String weatherCode = cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
+                    String icon = "☀️";
+                    if(weatherCode.contains("nuvol") || weatherCode.contains("cloud")) icon = "☁️";
+                    else if(weatherCode.contains("piogg") || weatherCode.contains("rain")) icon = "🌧️";
+                    else if(weatherCode.contains("temporal") || weatherCode.contains("thunder")) icon = "⛈️";
+                    else if(weatherCode.contains("nebb") || weatherCode.contains("fog")) icon = "🌫️";
+                    
+                    weatherIcon.setText(icon);
+                    weatherTemp.setText(cur.getString("temp_C")+"°C");
+                    weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value"));
+                    weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
+                    
+                    // Previsioni 7 giorni
+                    forecastContainer.removeAllViews();
+                    TextView title = new TextView(MainActivity.this);
+                    title.setText("📅 Previsioni 7 giorni");
+                    title.setTextColor(Color.parseColor("#ffd700"));
+                    title.setTextSize(11);
+                    title.setTextStyle(android.graphics.Typeface.BOLD);
+                    title.setPadding(0,0,0,4);
+                    forecastContainer.addView(title);
+                    
+                    String[] dayNames = {"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
+                    for (int i = 0; i < Math.min(7, weather.length()); i++) {
                         JSONObject d = weather.getJSONObject(i);
-                        sb.append("• ").append(d.getString("date").substring(5)).append(": ");
-                        sb.append(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")).append("°C ");
-                        sb.append(d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value")).append("\n");
+                        String dateStr = d.getString("date");
+                        Calendar c = Calendar.getInstance();
+                        c.setTime(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr));
+                        String dayName = dayNames[c.get(Calendar.DAY_OF_WEEK)-2];
+                        if(dayName == null) dayName = "Dom";
+                        
+                        LinearLayout row = new LinearLayout(MainActivity.this);
+                        row.setOrientation(LinearLayout.HORIZONTAL);
+                        row.setPadding(0,2,0,2);
+                        row.setBackgroundColor(Color.parseColor("#1a1a2e"));
+                        
+                        TextView tvDay = new TextView(MainActivity.this);
+                        tvDay.setText(dayName+" "+dateStr.substring(8));
+                        tvDay.setTextColor(Color.parseColor("#a0a0c0"));
+                        tvDay.setTextSize(10);
+                        tvDay.setWidth(50);
+                        
+                        TextView tvIcon = new TextView(MainActivity.this);
+                        String wDesc = d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
+                        String wIcon = "☀️";
+                        if(wDesc.contains("nuvol") || wDesc.contains("cloud")) wIcon = "☁️";
+                        else if(wDesc.contains("piogg") || wDesc.contains("rain")) wIcon = "🌧️";
+                        tvIcon.setText(wIcon);
+                        tvIcon.setTextSize(12);
+                        tvIcon.setWidth(30);
+                        tvIcon.setGravity(Gravity.CENTER);
+                        
+                        TextView tvTemp = new TextView(MainActivity.this);
+                        tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°C");
+                        tvTemp.setTextColor(Color.parseColor("#e8e8ff"));
+                        tvTemp.setTextSize(11);
+                        tvTemp.setGravity(Gravity.CENTER);
+                        
+                        row.addView(tvDay);
+                        row.addView(tvIcon);
+                        row.addView(tvTemp);
+                        forecastContainer.addView(row);
                     }
-                    weatherText.setText(sb.toString().trim());
-                } catch (Exception e) { weatherText.setText("⚠️ Errore"); }
+                    
+                } catch (Exception e) { 
+                    weatherIcon.setText("⚠️"); 
+                    weatherTemp.setText("Errore");
+                }
             }
         }.execute();
     }
@@ -521,7 +603,7 @@ public class MainActivity extends Activity {
         weatherHandler.postDelayed(new Runnable() {
             @Override public void run() {
                 loadWeather();
-                weatherHandler.postDelayed(this, 1800000); // 30 minuti
+                weatherHandler.postDelayed(this, 1800000);
             }
         }, 1800000);
     }

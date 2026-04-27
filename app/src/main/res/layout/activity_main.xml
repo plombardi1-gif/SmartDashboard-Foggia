@@ -7,11 +7,11 @@
     android:padding="5dp"
     android:weightSum="10">
 
-    <!-- RIGA 1: Orologio + Meteo Luxury (18%) -->
+    <!-- RIGA 1: Orologio + Meteo Grafico (20%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="1.8"
+        android:layout_weight="2"
         android:orientation="horizontal"
         android:weightSum="10">
 
@@ -19,7 +19,7 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="5"
+            android:layout_weight="4.5"
             android:layout_marginRight="3dp"
             android:background="@drawable/card"
             android:gravity="center"
@@ -27,61 +27,74 @@
             android:padding="8dp">
             <TextView android:id="@+id/clock"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="38dp" android:textStyle="bold"
+                android:textSize="40dp" android:textStyle="bold"
                 android:textColor="#ffd700" android:shadowColor="#000" android:shadowDx="1" android:shadowDy="1" android:shadowRadius="3"/>
             <TextView android:id="@+id/date"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="14dp" android:textColor="#c0c0e0" android:textStyle="bold"/>
+                android:textSize="15dp" android:textColor="#c0c0e0" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Meteo Luxury con vento -->
+        <!-- Meteo Grafico con Previsioni -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="5"
+            android:layout_weight="5.5"
             android:layout_marginLeft="3dp"
-            android:background="@drawable/card"
+            android:background="@drawable/card_weather"
             android:orientation="vertical"
-            android:padding="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🌤️ Foggia, IT" android:textSize="15dp"
-                android:textStyle="bold" android:textColor="#ffd700"/>
-            <ScrollView android:layout_width="fill_parent" android:layout_height="fill_parent">
-                <TextView android:id="@+id/weatherText"
-                    android:layout_width="fill_parent" android:layout_height="wrap_content"
-                    android:textSize="12dp" android:textColor="#e8e8ff"
-                    android:lineSpacingExtra="3dp"/>
+            android:padding="6dp">
+            
+            <!-- Meteo attuale -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+                <TextView android:id="@+id/weatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="☀️" android:textSize="32dp"/>
+                <LinearLayout android:orientation="vertical" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginLeft="8dp">
+                    <TextView android:id="@+id/weatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="26°C" android:textSize="24dp" android:textStyle="bold" android:textColor="#ffd700"/>
+                    <TextView android:id="@+id/weatherDesc" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Soleggiato" android:textSize="12dp" android:textColor="#e8e8ff"/>
+                    <TextView android:id="@+id/weatherWind" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="💨 8 km/h E" android:textSize="11dp" android:textColor="#a0a0c0"/>
+                </LinearLayout>
+            </LinearLayout>
+            
+            <!-- Previsioni 7 giorni scrollabili -->
+            <ScrollView android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="4dp">
+                <LinearLayout android:id="@+id/forecastContainer" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="wrap_content">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="📅 Previsioni 7 giorni" android:textSize="11dp" android:textColor="#ffd700" android:textStyle="bold" android:paddingBottom="2dp"/>
+                </LinearLayout>
             </ScrollView>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- RIGA 2: Calendario + Note (82%) -->
+    <!-- RIGA 2: Calendario + Note (80%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="8.2"
+        android:layout_weight="8"
         android:layout_marginTop="5dp"
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- CALENDARIO MENSILE GRANDE (62%) -->
+        <!-- CALENDARIO (60%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="6.2"
+            android:layout_weight="6"
             android:layout_marginRight="3dp"
             android:background="@drawable/card"
             android:orientation="vertical"
             android:padding="5dp">
             
-            <!-- Header Calendario -->
+            <!-- Header -->
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="3dp">
                 <Button android:id="@+id/btnPrevMonth" android:text="◀" android:layout_width="28dp" android:layout_height="28dp" android:textSize="12dp" android:background="#2d2d4a" android:textColor="#ffd700"/>
-                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gennaio 2024" android:textSize="15dp" android:textStyle="bold" android:textColor="#ffd700" android:gravity="center"/>
+                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Aprile 2026" android:textSize="15dp" android:textStyle="bold" android:textColor="#ffd700" android:gravity="center"/>
                 <Button android:id="@+id/btnNextMonth" android:text="▶" android:layout_width="28dp" android:layout_height="28dp" android:textSize="12dp" android:background="#2d2d4a" android:textColor="#ffd700"/>
             </LinearLayout>
             
-            <!-- Giorni della settimana -->
+            <!-- Giorni settimana -->
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:weightSum="7" android:paddingBottom="2dp">
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="L" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="M" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
@@ -92,32 +105,31 @@
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="D" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
             </LinearLayout>
             
-            <!-- Griglia giorni GRANDI -->
+            <!-- Griglia -->
             <GridView android:id="@+id/calendarGrid"
                 android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1"
                 android:numColumns="7" android:verticalSpacing="3dp" android:horizontalSpacing="3dp"
                 android:stretchMode="columnWidth"/>
             
-            <!-- Pannello appuntamenti del giorno selezionato -->
+            <!-- Pannello eventi giorno -->
             <LinearLayout android:id="@+id/dayEventsPanel" android:layout_width="fill_parent" android:layout_height="wrap_content"
                 android:orientation="vertical" android:background="#15152a" android:padding="4dp" android:visibility="gone">
                 <TextView android:id="@+id/selectedDayTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="📅 Appuntamenti del giorno" android:textSize="13dp" android:textColor="#ffd700" android:textStyle="bold" android:paddingBottom="3dp"/>
+                    android:text="📅 Appuntamenti" android:textSize="13dp" android:textColor="#ffd700" android:textStyle="bold" android:paddingBottom="3dp"/>
                 <ListView android:id="@+id/dayEventsList" android:layout_width="fill_parent" android:layout_height="80dp"
                     android:divider="#2d2d4a" android:dividerHeight="1dp"/>
             </LinearLayout>
             
-            <!-- Pulsante Aggiungi -->
             <Button android:id="@+id/btnAddEvt" android:layout_width="fill_parent" android:layout_height="32dp"
                 android:text="➕ Nuovo Appuntamento" android:textSize="12dp"
                 android:textColor="#0a0a1a" android:background="#ffd700" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- NOTE CON PULSANTI VISIBILI (38%) -->
+        <!-- NOTE (40%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="3.8"
+            android:layout_weight="4"
             android:layout_marginLeft="3dp"
             android:background="@drawable/card"
             android:orientation="vertical"
