@@ -13,7 +13,6 @@ import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -208,6 +207,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    // Adapter NOTE - Luxury Style
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos == null ? 0 : todos.size(); }
         @Override public Object getItem(int pos) { return todos.get(pos); }
@@ -216,8 +216,8 @@ public class MainActivity extends Activity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setPadding(5,5,5,5);
-            row.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            row.setPadding(8,6,8,6);
+            row.setBackgroundColor(Color.parseColor("#1A1A1A")); // Dark Grey Row
             
             try {
                 Button btnCheck = new Button(MainActivity.this);
@@ -225,8 +225,8 @@ public class MainActivity extends Activity {
                 btnCheck.setTextSize(16);
                 btnCheck.setWidth(45);
                 btnCheck.setHeight(45);
-                btnCheck.setBackgroundColor(Color.parseColor("#2d2d4a"));
-                btnCheck.setTextColor(Color.parseColor("#ffd700"));
+                btnCheck.setBackgroundColor(Color.parseColor("#333333"));
+                btnCheck.setTextColor(Color.parseColor("#D4AF37")); // Gold Check
                 btnCheck.setGravity(Gravity.CENTER);
                 btnCheck.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
@@ -244,18 +244,18 @@ public class MainActivity extends Activity {
                 
                 TextView tv = new TextView(MainActivity.this);
                 tv.setText(todos.get(position).text);
-                tv.setTextColor(todos.get(position).done ? Color.parseColor("#6a6a8a") : Color.parseColor("#ffffff"));
+                tv.setTextColor(todos.get(position).done ? Color.parseColor("#666666") : Color.parseColor("#FFFFFF")); // White Text
                 tv.setTextSize(14);
                 tv.setGravity(Gravity.CENTER_VERTICAL);
-                tv.setPadding(8,0,8,0);
+                tv.setPadding(10,0,10,0);
                 
                 Button btnDel = new Button(MainActivity.this);
                 btnDel.setText("🗑️");
                 btnDel.setTextSize(16);
                 btnDel.setWidth(45);
                 btnDel.setHeight(45);
-                btnDel.setBackgroundColor(Color.parseColor("#dc143c"));
-                btnDel.setTextColor(Color.parseColor("#ffffff"));
+                btnDel.setBackgroundColor(Color.parseColor("#8B0000")); // Dark Red
+                btnDel.setTextColor(Color.parseColor("#FFFFFF"));
                 btnDel.setGravity(Gravity.CENTER);
                 btnDel.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
@@ -292,6 +292,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    // Adapter EVENTI - Luxury Style
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents == null ? 0 : dayEvents.size(); }
         @Override public Object getItem(int pos) { return dayEvents.get(pos); }
@@ -300,8 +301,8 @@ public class MainActivity extends Activity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setPadding(4,4,4,4);
-            row.setBackgroundColor(Color.parseColor("#15152a"));
+            row.setPadding(8,6,8,6);
+            row.setBackgroundColor(Color.parseColor("#222222")); // Slightly lighter grey for events
             
             try {
                 Button btnCheck = new Button(MainActivity.this);
@@ -309,8 +310,8 @@ public class MainActivity extends Activity {
                 btnCheck.setTextSize(14);
                 btnCheck.setWidth(40);
                 btnCheck.setHeight(40);
-                btnCheck.setBackgroundColor(Color.parseColor("#2d2d4a"));
-                btnCheck.setTextColor(Color.parseColor("#ffd700"));
+                btnCheck.setBackgroundColor(Color.parseColor("#333333"));
+                btnCheck.setTextColor(Color.parseColor("#D4AF37"));
                 btnCheck.setGravity(Gravity.CENTER);
                 btnCheck.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
@@ -330,18 +331,18 @@ public class MainActivity extends Activity {
                 TextView tv = new TextView(MainActivity.this);
                 EventItem evt = dayEvents.get(position);
                 tv.setText(evt.display());
-                tv.setTextColor(evt.done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e8e8ff"));
+                tv.setTextColor(evt.done ? Color.parseColor("#666666") : Color.parseColor("#FFFFFF"));
                 tv.setTextSize(12);
                 tv.setGravity(Gravity.CENTER_VERTICAL);
-                tv.setPadding(6,0,6,0);
+                tv.setPadding(8,0,8,0);
                 
                 Button btnDel = new Button(MainActivity.this);
                 btnDel.setText("🗑️");
                 btnDel.setTextSize(14);
                 btnDel.setWidth(40);
                 btnDel.setHeight(40);
-                btnDel.setBackgroundColor(Color.parseColor("#dc143c"));
-                btnDel.setTextColor(Color.parseColor("#ffffff"));
+                btnDel.setBackgroundColor(Color.parseColor("#8B0000"));
+                btnDel.setTextColor(Color.parseColor("#FFFFFF"));
                 btnDel.setGravity(Gravity.CENTER);
                 btnDel.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
@@ -389,8 +390,8 @@ public class MainActivity extends Activity {
         try {
             EditText input = new EditText(this);
             input.setHint("Scrivi nota...");
-            input.setBackgroundColor(Color.parseColor("#1a1a2e"));
-            input.setTextColor(Color.parseColor("#ffffff"));
+            input.setBackgroundColor(Color.parseColor("#1A1A1A"));
+            input.setTextColor(Color.parseColor("#FFFFFF"));
             new AlertDialog.Builder(this)
                 .setTitle("Nuova Nota")
                 .setView(input)
@@ -437,8 +438,8 @@ public class MainActivity extends Activity {
             }
             
             for(EditText et : new EditText[]{dateInput, timeInput, descInput}) {
-                et.setBackgroundColor(Color.parseColor("#1a1a2e"));
-                et.setTextColor(Color.parseColor("#ffffff"));
+                et.setBackgroundColor(Color.parseColor("#1A1A1A"));
+                et.setTextColor(Color.parseColor("#FFFFFF"));
             }
             
             LinearLayout layout = new LinearLayout(this);
@@ -527,7 +528,7 @@ public class MainActivity extends Activity {
             cell.setOrientation(LinearLayout.VERTICAL);
             cell.setGravity(Gravity.CENTER);
             cell.setPadding(2,3,2,3);
-            cell.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            cell.setBackgroundColor(Color.parseColor("#1A1A1A"));
             cell.setClickable(true);
             cell.setFocusable(true);
             
@@ -547,26 +548,26 @@ public class MainActivity extends Activity {
                 TextView tvDay = new TextView(MainActivity.this);
                 tvDay.setGravity(Gravity.CENTER);
                 tvDay.setTextSize(16);
-                tvDay.setTextColor(Color.parseColor("#b0b0c0"));
+                tvDay.setTextColor(Color.parseColor("#CCCCCC"));
                 
                 TextView dot = new TextView(MainActivity.this);
                 dot.setGravity(Gravity.CENTER);
                 dot.setTextSize(10);
-                dot.setTextColor(Color.parseColor("#ffd700"));
+                dot.setTextColor(Color.parseColor("#D4AF37"));
                 
                 if(dayNum < 1 || dayNum > cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isCurrentMonth) {
                     tvDay.setText("");
                     dot.setText("");
-                    cell.setBackgroundColor(Color.parseColor("#0f0f1a"));
+                    cell.setBackgroundColor(Color.parseColor("#050505"));
                     cell.setEnabled(false);
                 } else {
                     tvDay.setText(String.valueOf(dayNum));
                     if(isToday) {
-                        tvDay.setTextColor(Color.parseColor("#ffd700"));
+                        tvDay.setTextColor(Color.parseColor("#D4AF37"));
                         tvDay.setText("●"+dayNum);
-                        cell.setBackgroundColor(Color.parseColor("#2a2a4a"));
+                        cell.setBackgroundColor(Color.parseColor("#333333"));
                     } else if(hasEvents) {
-                        tvDay.setTextColor(Color.parseColor("#ffd700"));
+                        tvDay.setTextColor(Color.parseColor("#D4AF37"));
                         dot.setText("●");
                     }
                     cell.setEnabled(true);
@@ -645,9 +646,10 @@ public class MainActivity extends Activity {
                         forecastContainer.removeAllViews();
                         TextView title = new TextView(MainActivity.this);
                         title.setText("📅 Previsioni 7 giorni");
-                        title.setTextColor(Color.parseColor("#ffd700"));
+                        title.setTextColor(Color.parseColor("#D4AF37"));
                         title.setTextSize(11);
                         title.setTypeface(null, Typeface.BOLD);
+                        title.setPadding(0,0,0,6);
                         forecastContainer.addView(title);
                         
                         String[] dayNames = {"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
@@ -661,18 +663,20 @@ public class MainActivity extends Activity {
                             
                             LinearLayout row = new LinearLayout(MainActivity.this);
                             row.setOrientation(LinearLayout.HORIZONTAL);
-                            row.setPadding(0,2,0,2);
-                            row.setBackgroundColor(Color.parseColor("#1a1a2e"));
+                            row.setPadding(0,3,0,3);
+                            row.setBackgroundColor(Color.parseColor("#1A1A1A"));
                             
                             TextView tvDay = new TextView(MainActivity.this);
                             tvDay.setText(dayName+" "+dateStr.substring(8));
-                            tvDay.setTextColor(Color.parseColor("#a0a0c0"));
+                            tvDay.setTextColor(Color.parseColor("#A0A0A0"));
                             tvDay.setTextSize(10);
+                            tvDay.setWidth(60);
                             
                             TextView tvTemp = new TextView(MainActivity.this);
                             tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°C");
-                            tvTemp.setTextColor(Color.parseColor("#e8e8ff"));
+                            tvTemp.setTextColor(Color.parseColor("#FFFFFF"));
                             tvTemp.setTextSize(11);
+                            tvTemp.setGravity(Gravity.CENTER);
                             
                             row.addView(tvDay);
                             row.addView(tvTemp);

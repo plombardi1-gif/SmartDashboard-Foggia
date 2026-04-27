@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Ombra esterna elegante -->
     <item>
         <shape android:shape="rectangle">
-            <gradient android:startColor="#000000" android:endColor="#1a1a2e" android:angle="45"/>
-            <corners android:radius="20dp" />
+            <solid android:color="#000000" />
+            <corners android:radius="15dp" />
         </shape>
     </item>
-    <!-- Card principale con bordo oro e gradiente -->
-    <item android:bottom="2dp" android:right="2dp">
+    <item android:bottom="1dp" android:right="1dp">
         <shape android:shape="rectangle">
-            <gradient android:startColor="#1e1e3a" android:endColor="#2a2a4a" android:angle="135"/>
-            <corners android:radius="18dp" />
-            <stroke android:width="2dp" android:color="#d4af37" />
+            <solid android:color="#111111" />
+            <corners android:radius="14dp" />
+            <stroke android:width="1dp" android:color="#D4AF37" />
         </shape>
     </item>
 </layer-list>
