@@ -2,20 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#ECEFF1"
+    android:background="#0f0f1e"
     android:orientation="vertical"
     android:padding="6dp"
     android:weightSum="10">
 
-    <!-- RIGA 1: Orologio + Meteo (25% altezza) -->
+    <!-- RIGA 1: Orologio + Meteo Luxury (20%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="2.5"
+        android:layout_weight="2"
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- Orologio (50%) -->
+        <!-- Orologio Luxury -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -24,16 +24,17 @@
             android:background="@drawable/card"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="8dp">
             <TextView android:id="@+id/clock"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="36dp" android:textStyle="bold" android:textColor="#2196F3" />
+                android:textSize="40dp" android:textStyle="bold"
+                android:textColor="#d4af37" android:shadowColor="#000" android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4"/>
             <TextView android:id="@+id/date"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="14dp" android:textColor="#607D8B" android:textStyle="bold" />
+                android:textSize="15dp" android:textColor="#b0b0c0" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Meteo (50%) -->
+        <!-- Meteo Luxury -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -41,28 +42,29 @@
             android:layout_marginLeft="3dp"
             android:background="@drawable/card"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="8dp">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🌤️ Foggia" android:textSize="16dp" android:textStyle="bold" android:textColor="#37474F"/>
+                android:text="🌤️ Foggia, Italia" android:textSize="16dp"
+                android:textStyle="bold" android:textColor="#d4af37"/>
             <ScrollView android:layout_width="fill_parent" android:layout_height="fill_parent">
                 <TextView android:id="@+id/weatherText"
                     android:layout_width="fill_parent" android:layout_height="wrap_content"
-                    android:textSize="12dp" android:textColor="#546E7A"
-                    android:text="Caricamento..." />
+                    android:textSize="13dp" android:textColor="#e0e0f0"
+                    android:lineSpacingExtra="2dp"/>
             </ScrollView>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- RIGA 2: Calendario + Note (75% altezza) -->
+    <!-- RIGA 2: Calendario + Note (80%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="7.5"
+        android:layout_weight="8"
         android:layout_marginTop="6dp"
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- Calendario (60%) -->
+        <!-- Calendario Mensile (60%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -71,17 +73,38 @@
             android:background="@drawable/card"
             android:orientation="vertical"
             android:padding="6dp">
+            
+            <!-- Header Calendario -->
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="4dp">
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📅 Calendario" android:textSize="18dp" android:textStyle="bold" android:textColor="#37474F"/>
-                <Button android:id="@+id/btnAddEvt" android:layout_width="35dp" android:layout_height="35dp" android:text="+" android:textSize="20dp" android:textStyle="bold" android:textColor="#FFF" android:background="#4CAF50"/>
+                <Button android:id="@+id/btnPrevMonth" android:text="◀" android:layout_width="30dp" android:layout_height="30dp" android:textSize="14dp" android:background="#2d2d44" android:textColor="#d4af37"/>
+                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gennaio 2024" android:textSize="16dp" android:textStyle="bold" android:textColor="#d4af37" android:gravity="center"/>
+                <Button android:id="@+id/btnNextMonth" android:text="▶" android:layout_width="30dp" android:layout_height="30dp" android:textSize="14dp" android:background="#2d2d44" android:textColor="#d4af37"/>
             </LinearLayout>
-            <ListView android:id="@+id/calendarList"
-                android:layout_width="fill_parent" android:layout_height="fill_parent"
-                android:divider="#E0E0E0" android:dividerHeight="1dp"
-                android:clickable="true" android:focusable="true" />
+            
+            <!-- Giorni della settimana -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:weightSum="7" android:paddingBottom="2dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Lun" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mar" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mer" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gio" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Ven" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Sab" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Dom" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+            </LinearLayout>
+            
+            <!-- Griglia giorni -->
+            <GridView android:id="@+id/calendarGrid"
+                android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1"
+                android:numColumns="7" android:verticalSpacing="2dp" android:horizontalSpacing="2dp"
+                android:stretchMode="columnWidth"/>
+            
+            <!-- Pulsante Aggiungi -->
+            <Button android:id="@+id/btnAddEvt" android:layout_width="fill_parent" android:layout_height="35dp"
+                android:text="➕ Aggiungi Appuntamento" android:textSize="13dp"
+                android:textColor="#0f0f1e" android:background="#d4af37" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Note (40%) -->
+        <!-- Note Luxury (40%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -90,14 +113,16 @@
             android:background="@drawable/card"
             android:orientation="vertical"
             android:padding="6dp">
+            
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="4dp">
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="16dp" android:textStyle="bold" android:textColor="#37474F"/>
-                <Button android:id="@+id/btnAddTodo" android:layout_width="30dp" android:layout_height="30dp" android:text="+" android:textSize="18dp" android:textStyle="bold" android:textColor="#FFF" android:background="#FF9800"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="16dp" android:textStyle="bold" android:textColor="#d4af37"/>
+                <Button android:id="@+id/btnAddTodo" android:text="➕" android:layout_width="32dp" android:layout_height="32dp" android:textSize="16dp" android:textColor="#0f0f1e" android:background="#d4af37"/>
             </LinearLayout>
+            
             <ListView android:id="@+id/todoList"
                 android:layout_width="fill_parent" android:layout_height="fill_parent"
-                android:divider="#E0E0E0" android:dividerHeight="1dp"
-                android:clickable="true" android:focusable="true" />
+                android:divider="#2d2d44" android:dividerHeight="1dp"
+                android:clickable="true" android:focusable="true"/>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
