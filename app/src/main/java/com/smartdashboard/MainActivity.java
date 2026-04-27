@@ -207,7 +207,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter NOTE - Luxury Style
+    // Adapter NOTE - Pulsante X invece di emoji
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos == null ? 0 : todos.size(); }
         @Override public Object getItem(int pos) { return todos.get(pos); }
@@ -217,16 +217,16 @@ public class MainActivity extends Activity {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setPadding(8,6,8,6);
-            row.setBackgroundColor(Color.parseColor("#1A1A1A")); // Dark Grey Row
+            row.setBackgroundColor(Color.parseColor("#1A1A1A"));
             
             try {
                 Button btnCheck = new Button(MainActivity.this);
-                btnCheck.setText(todos.get(position).done ? "✅" : "⬜");
-                btnCheck.setTextSize(16);
+                btnCheck.setText(todos.get(position).done ? "✓" : "○");
+                btnCheck.setTextSize(18);
                 btnCheck.setWidth(45);
                 btnCheck.setHeight(45);
                 btnCheck.setBackgroundColor(Color.parseColor("#333333"));
-                btnCheck.setTextColor(Color.parseColor("#D4AF37")); // Gold Check
+                btnCheck.setTextColor(Color.parseColor("#D4AF37"));
                 btnCheck.setGravity(Gravity.CENTER);
                 btnCheck.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
@@ -244,17 +244,18 @@ public class MainActivity extends Activity {
                 
                 TextView tv = new TextView(MainActivity.this);
                 tv.setText(todos.get(position).text);
-                tv.setTextColor(todos.get(position).done ? Color.parseColor("#666666") : Color.parseColor("#FFFFFF")); // White Text
+                tv.setTextColor(todos.get(position).done ? Color.parseColor("#666666") : Color.parseColor("#FFFFFF"));
                 tv.setTextSize(14);
                 tv.setGravity(Gravity.CENTER_VERTICAL);
                 tv.setPadding(10,0,10,0);
                 
+                // Pulsante X elegante invece di 🗑️
                 Button btnDel = new Button(MainActivity.this);
-                btnDel.setText("🗑️");
-                btnDel.setTextSize(16);
+                btnDel.setText("✕");
+                btnDel.setTextSize(18);
                 btnDel.setWidth(45);
                 btnDel.setHeight(45);
-                btnDel.setBackgroundColor(Color.parseColor("#8B0000")); // Dark Red
+                btnDel.setBackgroundColor(Color.parseColor("#8B0000"));
                 btnDel.setTextColor(Color.parseColor("#FFFFFF"));
                 btnDel.setGravity(Gravity.CENTER);
                 btnDel.setOnClickListener(new View.OnClickListener() {
@@ -292,7 +293,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter EVENTI - Luxury Style
+    // Adapter EVENTI - Pulsante X invece di emoji
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents == null ? 0 : dayEvents.size(); }
         @Override public Object getItem(int pos) { return dayEvents.get(pos); }
@@ -302,12 +303,12 @@ public class MainActivity extends Activity {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setPadding(8,6,8,6);
-            row.setBackgroundColor(Color.parseColor("#222222")); // Slightly lighter grey for events
+            row.setBackgroundColor(Color.parseColor("#222222"));
             
             try {
                 Button btnCheck = new Button(MainActivity.this);
-                btnCheck.setText(dayEvents.get(position).done ? "✅" : "⬜");
-                btnCheck.setTextSize(14);
+                btnCheck.setText(dayEvents.get(position).done ? "✓" : "○");
+                btnCheck.setTextSize(16);
                 btnCheck.setWidth(40);
                 btnCheck.setHeight(40);
                 btnCheck.setBackgroundColor(Color.parseColor("#333333"));
@@ -336,9 +337,10 @@ public class MainActivity extends Activity {
                 tv.setGravity(Gravity.CENTER_VERTICAL);
                 tv.setPadding(8,0,8,0);
                 
+                // Pulsante X elegante
                 Button btnDel = new Button(MainActivity.this);
-                btnDel.setText("🗑️");
-                btnDel.setTextSize(14);
+                btnDel.setText("✕");
+                btnDel.setTextSize(16);
                 btnDel.setWidth(40);
                 btnDel.setHeight(40);
                 btnDel.setBackgroundColor(Color.parseColor("#8B0000"));
@@ -624,7 +626,7 @@ public class MainActivity extends Activity {
             protected void onPostExecute(String result) {
                 try {
                     if (result.equals("ERRORE")) { 
-                        if(weatherIcon != null) weatherIcon.setText("❌"); 
+                        if(weatherIcon != null) weatherIcon.setText("✖"); 
                         if(weatherTemp != null) weatherTemp.setText("Offline");
                         return; 
                     }
@@ -633,26 +635,31 @@ public class MainActivity extends Activity {
                     JSONArray weather = json.getJSONArray("weather");
                     
                     String weatherCode = cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
-                    String icon = "☀️";
-                    if(weatherCode.contains("nuvol") || weatherCode.contains("cloud")) icon = "☁️";
-                    else if(weatherCode.contains("piogg") || weatherCode.contains("rain")) icon = "🌧️";
+                    String icon = "☀";
+                    if(weatherCode.contains("nuvol") || weatherCode.contains("cloud")) icon = "☁";
+                    else if(weatherCode.contains("piogg") || weatherCode.contains("rain")) icon = "🌧";
                     
                     if(weatherIcon != null) weatherIcon.setText(icon);
                     if(weatherTemp != null) weatherTemp.setText(cur.getString("temp_C")+"°C");
                     if(weatherDesc != null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value"));
                     if(weatherWind != null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
                     
+                    // Previsioni 7 giorni - Layout migliorato
                     if(forecastContainer != null) {
                         forecastContainer.removeAllViews();
+                        
+                        // Titolo
                         TextView title = new TextView(MainActivity.this);
-                        title.setText("📅 Previsioni 7 giorni");
+                        title.setText("Previsioni 7 giorni");
                         title.setTextColor(Color.parseColor("#D4AF37"));
-                        title.setTextSize(11);
+                        title.setTextSize(10);
                         title.setTypeface(null, Typeface.BOLD);
-                        title.setPadding(0,0,0,6);
+                        title.setPadding(0,0,0,4);
                         forecastContainer.addView(title);
                         
+                        // Griglia previsioni
                         String[] dayNames = {"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
+                        
                         for (int i = 0; i < Math.min(7, weather.length()); i++) {
                             JSONObject d = weather.getJSONObject(i);
                             String dateStr = d.getString("date");
@@ -661,31 +668,58 @@ public class MainActivity extends Activity {
                             String dayName = dayNames[c.get(Calendar.DAY_OF_WEEK)-2];
                             if(dayName == null) dayName = "Dom";
                             
+                            // Cella previsione
                             LinearLayout row = new LinearLayout(MainActivity.this);
                             row.setOrientation(LinearLayout.HORIZONTAL);
-                            row.setPadding(0,3,0,3);
-                            row.setBackgroundColor(Color.parseColor("#1A1A1A"));
+                            row.setPadding(4,2,4,2);
+                            row.setGravity(Gravity.CENTER_VERTICAL);
+                            row.setBackgroundColor(i % 2 == 0 ? Color.parseColor("#1A1A1A") : Color.parseColor("#222222"));
                             
+                            // Giorno
                             TextView tvDay = new TextView(MainActivity.this);
-                            tvDay.setText(dayName+" "+dateStr.substring(8));
-                            tvDay.setTextColor(Color.parseColor("#A0A0A0"));
-                            tvDay.setTextSize(10);
-                            tvDay.setWidth(60);
+                            tvDay.setText(dayName);
+                            tvDay.setTextColor(Color.parseColor("#D4AF37"));
+                            tvDay.setTextSize(9);
+                            tvDay.setWidth(32);
+                            tvDay.setGravity(Gravity.CENTER);
                             
+                            // Data
+                            TextView tvDate = new TextView(MainActivity.this);
+                            tvDate.setText(dateStr.substring(8));
+                            tvDate.setTextColor(Color.parseColor("#888888"));
+                            tvDate.setTextSize(9);
+                            tvDate.setWidth(20);
+                            
+                            // Icona meteo
+                            String wDesc = d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
+                            String wIcon = "☀";
+                            if(wDesc.contains("nuvol") || wDesc.contains("cloud")) wIcon = "☁";
+                            else if(wDesc.contains("piogg") || wDesc.contains("rain")) wIcon = "🌧";
+                            
+                            TextView tvIcon = new TextView(MainActivity.this);
+                            tvIcon.setText(wIcon);
+                            tvIcon.setTextColor(Color.parseColor("#FFFFFF"));
+                            tvIcon.setTextSize(11);
+                            tvIcon.setWidth(24);
+                            tvIcon.setGravity(Gravity.CENTER);
+                            
+                            // Temperatura
                             TextView tvTemp = new TextView(MainActivity.this);
-                            tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°C");
+                            tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°");
                             tvTemp.setTextColor(Color.parseColor("#FFFFFF"));
-                            tvTemp.setTextSize(11);
-                            tvTemp.setGravity(Gravity.CENTER);
+                            tvTemp.setTextSize(10);
+                            tvTemp.setGravity(Gravity.RIGHT);
                             
                             row.addView(tvDay);
+                            row.addView(tvDate);
+                            row.addView(tvIcon);
                             row.addView(tvTemp);
                             forecastContainer.addView(row);
                         }
                     }
                 } catch (Exception e) { 
                     e.printStackTrace();
-                    if(weatherIcon != null) weatherIcon.setText("⚠️"); 
+                    if(weatherIcon != null) weatherIcon.setText("✖"); 
                     if(weatherTemp != null) weatherTemp.setText("Errore");
                 }
             }
