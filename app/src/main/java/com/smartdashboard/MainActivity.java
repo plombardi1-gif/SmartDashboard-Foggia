@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,6 +29,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private TextView clockText, dateText, weatherText;
     private ListView calendarList, todoList;
+    private Button btnAddEvt, btnAddTodo;
     private Handler clockHandler;
     private SharedPreferences prefs;
     private ArrayList<String> events, todos;
@@ -37,74 +39,61 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+
         clockText = (TextView) findViewById(R.id.clock);
         dateText = (TextView) findViewById(R.id.date);
         weatherText = (TextView) findViewById(R.id.weatherText);
         calendarList = (ListView) findViewById(R.id.calendarList);
         todoList = (ListView) findViewById(R.id.todoList);
-        
+        btnAddEvt = (Button) findViewById(R.id.btnAddEvt);
+        btnAddTodo = (Button) findViewById(R.id.btnAddTodo);
+
         prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
         loadLists();
         setupAdapters();
-        
+
         clockHandler = new Handler();
         startClock();
         loadWeather();
-        
+
+        // Pulsanti +
+        btnAddEvt.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showAddDialog("appointment", -1); }
+        });
+        btnAddTodo.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showAddDialog("todo", -1); }
+        });
+
+        // Click su elementi
         calendarList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                showAddDialog("appointment", position);
-            }
+            @Override public void onItemClick(AdapterView<?> p, View v, int pos, long id) { showAddDialog("appointment", pos); }
         });
-        
         calendarList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                deleteItem("appointment", position);
-                return true;
-            }
+            @Override public boolean onItemLongClick(AdapterView<?> p, View v, int pos, long id) { deleteItem("appointment", pos); return true; }
         });
-        
+
         todoList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                toggleDone("todo", position);
-            }
+            @Override public void onItemClick(AdapterView<?> p, View v, int pos, long id) { toggleDone("todo", pos); }
         });
-        
         todoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                deleteItem("todo", position);
-                return true;
-            }
+            @Override public boolean onItemLongClick(AdapterView<?> p, View v, int pos, long id) { deleteItem("todo", pos); return true; }
         });
     }
 
     private void loadLists() {
         try {
-            String eventsJson = prefs.getString("events", "[]");
-            JSONArray jsonArray = new JSONArray(eventsJson);
+            String json = prefs.getString("events", "[]");
+            JSONArray arr = new JSONArray(json);
             events = new ArrayList<String>();
-            for (int i = 0; i < jsonArray.length(); i++) {
-                events.add(jsonArray.getString(i));
-            }
-        } catch (JSONException e) {
-            events = new ArrayList<String>();
-        }
-        
+            for(int i=0; i<arr.length(); i++) events.add(arr.getString(i));
+        } catch(Exception e) { events = new ArrayList<String>(); }
+
         try {
-            String todosJson = prefs.getString("todos", "[]");
-            JSONArray jsonArray = new JSONArray(todosJson);
+            String json = prefs.getString("todos", "[]");
+            JSONArray arr = new JSONArray(json);
             todos = new ArrayList<String>();
-            for (int i = 0; i < jsonArray.length(); i++) {
-                todos.add(jsonArray.getString(i));
-            }
-        } catch (JSONException e) {
-            todos = new ArrayList<String>();
-        }
+            for(int i=0; i<arr.length(); i++) todos.add(arr.getString(i));
+        } catch(Exception e) { todos = new ArrayList<String>(); }
     }
 
     private void setupAdapters() {
@@ -116,89 +105,57 @@ public class MainActivity extends Activity {
 
     private void saveLists() {
         try {
-            JSONArray jsonArray = new JSONArray();
-            for (String event : events) {
-                jsonArray.put(event);
-            }
-            prefs.edit().putString("events", jsonArray.toString()).commit();
-        } catch (Exception e) {}
-        
+            JSONArray arr = new JSONArray();
+            for(String s : events) arr.put(s);
+            prefs.edit().putString("events", arr.toString()).commit();
+        } catch(Exception e){}
         try {
-            JSONArray jsonArray = new JSONArray();
-            for (String todo : todos) {
-                jsonArray.put(todo);
-            }
-            prefs.edit().putString("todos", jsonArray.toString()).commit();
-        } catch (Exception e) {}
+            JSONArray arr = new JSONArray();
+            for(String s : todos) arr.put(s);
+            prefs.edit().putString("todos", arr.toString()).commit();
+        } catch(Exception e){}
     }
 
     private void showAddDialog(final String type, final int position) {
         EditText input = new EditText(this);
         input.setHint("Scrivi qui...");
-        
         new AlertDialog.Builder(this)
-            .setTitle("Modifica")
+            .setTitle(type.equals("appointment") ? "Modifica Appuntamento" : "Modifica Nota")
             .setView(input)
             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
+                @Override public void onClick(DialogInterface d, int w) {
                     String val = input.getText().toString().trim();
-                    if (!val.isEmpty()) {
-                        if (type.equals("appointment")) {
-                            if (position == -1) {
-                                events.add(0, val);
-                            } else {
-                                events.set(position, val);
-                            }
+                    if(!val.isEmpty()) {
+                        if(type.equals("appointment")) {
+                            if(position == -1) events.add(0, val); else events.set(position, val);
                         } else {
-                            if (position == -1) {
-                                todos.add(0, val);
-                            } else {
-                                todos.set(position, val);
-                            }
+                            if(position == -1) todos.add(0, val); else todos.set(position, val);
                         }
-                        saveLists();
-                        setupAdapters();
+                        saveLists(); setupAdapters();
                     }
                 }
-            })
-            .setNegativeButton("Annulla", null)
-            .show();
+            }).setNegativeButton("Annulla", null).show();
     }
 
     private void deleteItem(String type, int position) {
-        if (type.equals("appointment")) {
-            events.remove(position);
-        } else {
-            todos.remove(position);
-        }
-        saveLists();
-        setupAdapters();
+        if(type.equals("appointment")) events.remove(position); else todos.remove(position);
+        saveLists(); setupAdapters();
     }
 
     private void toggleDone(String type, int position) {
-        if (type.equals("todo")) {
+        if(type.equals("todo")) {
             String t = todos.get(position);
-            if (t.startsWith("✅ ")) {
-                t = t.substring(2);
-            } else {
-                t = "✅ " + t;
-            }
-            todos.set(position, t);
-            saveLists();
-            setupAdapters();
+            todos.set(position, t.startsWith("✅ ") ? t.substring(2) : "✅ "+t);
+            saveLists(); setupAdapters();
         }
     }
 
     private void startClock() {
         clockHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 Date now = new Date();
-                SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-                SimpleDateFormat sdfDate = new SimpleDateFormat("EEEE dd MMMM yyyy", Locale.ITALY);
-                clockText.setText(sdfTime.format(now));
-                dateText.setText(sdfDate.format(now));
+                clockText.setText(new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(now));
+                dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy", Locale.ITALY).format(now));
                 clockHandler.postDelayed(this, 1000);
             }
         }, 1000);
@@ -228,7 +185,7 @@ public class MainActivity extends Activity {
             @Override
             protected void onPostExecute(String result) {
                 if (result.equals("ERRORE")) {
-                    weatherText.setText("❌ Offline o server irraggiungibile");
+                    weatherText.setText("❌ Offline");
                     return;
                 }
                 try {
@@ -246,30 +203,9 @@ public class MainActivity extends Activity {
                     }
                     weatherText.setText(text.trim());
                 } catch (Exception e) {
-                    weatherText.setText("⚠️ Errore lettura meteo");
+                    weatherText.setText("⚠️ Errore meteo");
                 }
             }
         }.execute();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        menu.add(0, 1, 0, "➕ Appuntamento").setIcon(android.R.drawable.ic_menu_add);
-        menu.add(0, 2, 0, "➕ Nota").setIcon(android.R.drawable.ic_menu_add);
-        menu.add(0, 3, 0, "🔄 Aggiorna Meteo").setIcon(android.R.drawable.ic_menu_rotate);
-        return true;
-    }
-    
-    @Override
-    public boolean onOptionsItemSelected(android.view.MenuItem item) {
-        int id = item.getItemId();
-        if (id == 1) {
-            showAddDialog("appointment", -1);
-        } else if (id == 2) {
-            showAddDialog("todo", -1);
-        } else if (id == 3) {
-            loadWeather();
-        }
-        return true;
     }
 }

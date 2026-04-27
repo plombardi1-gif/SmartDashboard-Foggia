@@ -1,56 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:stretchColumns="*"
-    android:background="#2c3e50"
-    android:padding="6dp">
+    android:background="#ECEFF1"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:weightSum="10">
 
-    <TableRow>
-        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent"
-            android:layout_weight="1" android:orientation="vertical"
-            android:background="#34495e" android:padding="8dp" android:layout_margin="3dp">
-            <TextView android:id="@+id/clock" android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:textSize="28dp"
-                android:textStyle="bold" android:textColor="#e74c3c" android:gravity="center" />
-            <TextView android:id="@+id/date" android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:textSize="14dp"
-                android:textColor="#bdc3c7" android:gravity="center" android:layout_marginTop="4dp" />
+    <!-- OROLOGIO (20% altezza) -->
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:background="@drawable/card"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="8dp">
+        <TextView android:id="@+id/clock"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="42dp" android:textStyle="bold" android:textColor="#2196F3" />
+        <TextView android:id="@+id/date"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="16dp" android:textColor="#607D8B" android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- CONTENUTO (80% altezza) -->
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="10">
+
+        <!-- CALENDARIO (60% larghezza) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="6"
+            android:layout_marginRight="4dp"
+            android:background="@drawable/card"
+            android:orientation="vertical"
+            android:padding="8dp">
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="6dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📅 Calendario" android:textSize="20dp" android:textStyle="bold" android:textColor="#37474F"/>
+                <Button android:id="@+id/btnAddEvt" android:layout_width="40dp" android:layout_height="40dp" android:text="+" android:textSize="22dp" android:textStyle="bold" android:textColor="#FFF" android:background="#4CAF50"/>
+            </LinearLayout>
+            <ListView android:id="@+id/calendarList"
+                android:layout_width="fill_parent" android:layout_height="fill_parent"
+                android:divider="#E0E0E0" android:dividerHeight="1dp"
+                android:clickable="true" android:focusable="true" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent"
-            android:layout_weight="1" android:orientation="vertical"
-            android:background="#34495e" android:padding="8dp" android:layout_margin="3dp">
-            <TextView android:text="Meteo Foggia" android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:textSize="16dp"
-                android:textStyle="bold" android:textColor="#ecf0f1" android:paddingBottom="4dp" />
-            <ScrollView android:layout_width="fill_parent" android:layout_height="fill_parent">
-                <TextView android:id="@+id/weatherText" android:layout_width="fill_parent"
-                    android:layout_height="wrap_content" android:textSize="14dp"
-                    android:textColor="#ecf0f1" android:text="Caricamento..." />
-            </ScrollView>
+        <!-- NOTE / DA FARE (40% larghezza) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="4"
+            android:background="@drawable/card"
+            android:orientation="vertical"
+            android:padding="8dp">
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="6dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="18dp" android:textStyle="bold" android:textColor="#37474F"/>
+                <Button android:id="@+id/btnAddTodo" android:layout_width="35dp" android:layout_height="35dp" android:text="+" android:textSize="20dp" android:textStyle="bold" android:textColor="#FFF" android:background="#FF9800"/>
+            </LinearLayout>
+            <ListView android:id="@+id/todoList"
+                android:layout_width="fill_parent" android:layout_height="fill_parent"
+                android:divider="#E0E0E0" android:dividerHeight="1dp"
+                android:clickable="true" android:focusable="true" />
         </LinearLayout>
-    </TableRow>
-
-    <TableRow>
-        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent"
-            android:layout_weight="1" android:orientation="vertical"
-            android:background="#34495e" android:padding="8dp" android:layout_margin="3dp">
-            <TextView android:text="📅 Appuntamenti" android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:textSize="16dp"
-                android:textStyle="bold" android:textColor="#ecf0f1" android:paddingBottom="4dp" />
-            <ListView android:id="@+id/calendarList" android:layout_width="fill_parent"
-                android:layout_height="fill_parent" android:dividerHeight="2dp" />
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent"
-            android:layout_weight="1" android:orientation="vertical"
-            android:background="#34495e" android:padding="8dp" android:layout_margin="3dp">
-            <TextView android:text="📝 Note / Da Fare" android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:textSize="16dp"
-                android:textStyle="bold" android:textColor="#ecf0f1" android:paddingBottom="4dp" />
-            <ListView android:id="@+id/todoList" android:layout_width="fill_parent"
-                android:layout_height="fill_parent" android:dividerHeight="2dp" />
-        </LinearLayout>
-    </TableRow>
-</TableLayout>
+    </LinearLayout>
+</LinearLayout>
