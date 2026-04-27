@@ -545,7 +545,7 @@ public class MainActivity extends Activity {
                     title.setText("📅 Previsioni 7 giorni");
                     title.setTextColor(Color.parseColor("#ffd700"));
                     title.setTextSize(11);
-                    title.setTextStyle(android.graphics.Typeface.BOLD);
+                    title.setTypeface(null, android.graphics.Typeface.BOLD);
                     title.setPadding(0,0,0,4);
                     forecastContainer.addView(title);
                     
