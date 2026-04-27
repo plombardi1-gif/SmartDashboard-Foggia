@@ -17,8 +17,8 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
-import android.widget.ListView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,17 +35,35 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private TextView clockText, dateText, weatherText, calendarMonth;
+    private TextView clockText, dateText, weatherText, calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
-    private ListView todoList;
+    private ListView todoList, dayEventsList;
+    private LinearLayout dayEventsPanel;
     private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth;
     private Handler clockHandler, weatherHandler;
     private SharedPreferences prefs;
-    private ArrayList<String> todos;
-    private HashMap<String, ArrayList<String>> eventsByDate; // "YYYY-MM-DD" -> list of events
-    private ArrayAdapter<String> todoAdapter;
+    private ArrayList<TodoItem> todos;
+    private ArrayList<EventItem> dayEvents;
+    private HashMap<String, ArrayList<EventItem>> eventsByDate;
+    private TodoAdapter todoAdapter;
+    private DayEventsAdapter dayEventsAdapter;
     private Calendar currentCal;
     private CalendarAdapter calendarAdapter;
+    private String selectedDate = null;
+
+    // Classi interne per dati strutturati
+    static class TodoItem {
+        String text;
+        boolean done;
+        TodoItem(String t, boolean d) { text=t; done=d; }
+    }
+    
+    static class EventItem {
+        String time, desc;
+        boolean done;
+        EventItem(String t, String d, boolean done) { time=t; desc=d; this.done=done; }
+        String display() { return (time.isEmpty()?"":time+" - ")+desc; }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +76,9 @@ public class MainActivity extends Activity {
         calendarMonth = (TextView) findViewById(R.id.calendarMonth);
         calendarGrid = (GridView) findViewById(R.id.calendarGrid);
         todoList = (ListView) findViewById(R.id.todoList);
+        dayEventsList = (ListView) findViewById(R.id.dayEventsList);
+        dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel);
+        selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
         btnAddEvt = (Button) findViewById(R.id.btnAddEvt);
         btnAddTodo = (Button) findViewById(R.id.btnAddTodo);
         btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
@@ -65,7 +86,7 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
         loadData();
-        setupTodoAdapter();
+        setupAdapters();
 
         currentCal = Calendar.getInstance();
         calendarAdapter = new CalendarAdapter();
@@ -80,24 +101,16 @@ public class MainActivity extends Activity {
 
         // Pulsanti
         btnAddEvt.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showAddEventDialog(null); }
+            @Override public void onClick(View v) { showAddEventDialog(selectedDate); }
         });
         btnAddTodo.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showAddTodoDialog(-1); }
+            @Override public void onClick(View v) { showAddTodoDialog(); }
         });
         btnPrevMonth.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); }
         });
         btnNextMonth.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); }
-        });
-
-        // Note: click per spuntare, long-press per eliminare
-        todoList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override public void onItemClick(AdapterView<?> p, View v, int pos, long id) { toggleDone(pos); }
-        });
-        todoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override public boolean onItemLongClick(AdapterView<?> p, View v, int pos, long id) { deleteTodo(pos); return true; }
         });
     }
 
@@ -106,12 +119,15 @@ public class MainActivity extends Activity {
         try {
             String json = prefs.getString("todos", "[]");
             JSONArray arr = new JSONArray(json);
-            todos = new ArrayList<String>();
-            for(int i=0; i<arr.length(); i++) todos.add(arr.getString(i));
-        } catch(Exception e) { todos = new ArrayList<String>(); }
+            todos = new ArrayList<TodoItem>();
+            for(int i=0; i<arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                todos.add(new TodoItem(obj.getString("text"), obj.getBoolean("done")));
+            }
+        } catch(Exception e) { todos = new ArrayList<TodoItem>(); }
 
         // Carica eventi per data
-        eventsByDate = new HashMap<String, ArrayList<String>>();
+        eventsByDate = new HashMap<String, ArrayList<EventItem>>();
         try {
             String json = prefs.getString("events_map", "{}");
             JSONObject obj = new JSONObject(json);
@@ -120,19 +136,28 @@ public class MainActivity extends Activity {
                 for(int i=0; i<keys.length(); i++) {
                     String date = keys.getString(i);
                     JSONArray arr = obj.getJSONArray(date);
-                    ArrayList<String> list = new ArrayList<String>();
-                    for(int j=0; j<arr.length(); j++) list.add(arr.getString(j));
+                    ArrayList<EventItem> list = new ArrayList<EventItem>();
+                    for(int j=0; j<arr.length(); j++) {
+                        JSONObject evt = arr.getJSONObject(j);
+                        list.add(new EventItem(evt.optString("time",""), evt.getString("desc"), evt.optBoolean("done",false)));
+                    }
                     eventsByDate.put(date, list);
                 }
             }
         } catch(Exception e) {}
+        dayEvents = new ArrayList<EventItem>();
     }
 
     private void saveData() {
         // Salva notes
         try {
             JSONArray arr = new JSONArray();
-            for(String s : todos) arr.put(s);
+            for(TodoItem t : todos) {
+                JSONObject obj = new JSONObject();
+                obj.put("text", t.text);
+                obj.put("done", t.done);
+                arr.put(obj);
+            }
             prefs.edit().putString("todos", arr.toString()).commit();
         } catch(Exception e){}
 
@@ -141,33 +166,150 @@ public class MainActivity extends Activity {
             JSONObject obj = new JSONObject();
             for(String date : eventsByDate.keySet()) {
                 JSONArray arr = new JSONArray();
-                for(String evt : eventsByDate.get(date)) arr.put(evt);
+                for(EventItem evt : eventsByDate.get(date)) {
+                    JSONObject e = new JSONObject();
+                    e.put("time", evt.time);
+                    e.put("desc", evt.desc);
+                    e.put("done", evt.done);
+                    arr.put(e);
+                }
                 obj.put(date, arr);
             }
             prefs.edit().putString("events_map", obj.toString()).commit();
         } catch(Exception e){}
     }
 
-    private void setupTodoAdapter() {
-        todoAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, todos) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView tv = (TextView) super.getView(position, convertView, parent);
-                String text = todos.get(position);
-                if(text.startsWith("✅ ")) {
-                    tv.setTextColor(Color.parseColor("#6a6a8a"));
-                } else {
-                    tv.setTextColor(Color.parseColor("#e0e0f0"));
-                }
-                tv.setBackgroundColor(Color.parseColor("#1a1a2e"));
-                tv.setPadding(8,6,8,6);
-                return tv;
-            }
-        };
+    private void setupAdapters() {
+        todoAdapter = new TodoAdapter();
         todoList.setAdapter(todoAdapter);
+        dayEventsAdapter = new DayEventsAdapter();
+        dayEventsList.setAdapter(dayEventsAdapter);
     }
 
-    private void showAddTodoDialog(final int position) {
+    // Adapter per Note con pulsanti ✅ e 🗑️ visibili
+    private class TodoAdapter extends BaseAdapter {
+        @Override public int getCount() { return todos.size(); }
+        @Override public Object getItem(int pos) { return todos.get(pos); }
+        @Override public long getItemId(int pos) { return pos; }
+        @Override
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            LinearLayout row = new LinearLayout(MainActivity.this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(4,3,4,3);
+            row.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            
+            // Checkbox button
+            Button btnCheck = new Button(MainActivity.this);
+            btnCheck.setText(todos.get(position).done ? "✅" : "⬜");
+            btnCheck.setTextSize(14);
+            btnCheck.setWidth(35);
+            btnCheck.setHeight(35);
+            btnCheck.setBackgroundColor(Color.TRANSPARENT);
+            btnCheck.setTextColor(Color.parseColor("#ffd700"));
+            btnCheck.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    todos.get(position).done = !todos.get(position).done;
+                    saveData(); notifyDataSetChanged();
+                }
+            });
+            
+            // Text
+            TextView tv = new TextView(MainActivity.this);
+            String text = todos.get(position).text;
+            tv.setText(text);
+            tv.setTextColor(todos.get(position).done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e0e0f0"));
+            tv.setGravity(Gravity.CENTER_VERTICAL);
+            tv.setPadding(6,0,0,0);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            
+            // Delete button
+            Button btnDel = new Button(MainActivity.this);
+            btnDel.setText("🗑️");
+            btnDel.setTextSize(12);
+            btnDel.setWidth(30);
+            btnDel.setHeight(30);
+            btnDel.setBackgroundColor(Color.TRANSPARENT);
+            btnDel.setTextColor(Color.parseColor("#ff6b6b"));
+            btnDel.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    todos.remove(position);
+                    saveData(); notifyDataSetChanged();
+                }
+            });
+            
+            row.addView(btnCheck);
+            row.addView(tv);
+            row.addView(btnDel);
+            return row;
+        }
+    }
+
+    // Adapter per Eventi del giorno con pulsanti ✅ e 🗑️
+    private class DayEventsAdapter extends BaseAdapter {
+        @Override public int getCount() { return dayEvents.size(); }
+        @Override public Object getItem(int pos) { return dayEvents.get(pos); }
+        @Override public long getItemId(int pos) { return pos; }
+        @Override
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            LinearLayout row = new LinearLayout(MainActivity.this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(3,2,3,2);
+            row.setBackgroundColor(Color.parseColor("#15152a"));
+            
+            Button btnCheck = new Button(MainActivity.this);
+            btnCheck.setText(dayEvents.get(position).done ? "✅" : "⬜");
+            btnCheck.setTextSize(12);
+            btnCheck.setWidth(30);
+            btnCheck.setHeight(30);
+            btnCheck.setBackgroundColor(Color.TRANSPARENT);
+            btnCheck.setTextColor(Color.parseColor("#ffd700"));
+            btnCheck.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    dayEvents.get(position).done = !dayEvents.get(position).done;
+                    // Salva anche nella mappa principale
+                    if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
+                        saveData();
+                        if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
+                    }
+                    notifyDataSetChanged();
+                }
+            });
+            
+            TextView tv = new TextView(MainActivity.this);
+            EventItem evt = dayEvents.get(position);
+            tv.setText(evt.display());
+            tv.setTextColor(evt.done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e8e8ff"));
+            tv.setTextSize(11);
+            tv.setGravity(Gravity.CENTER_VERTICAL);
+            tv.setPadding(4,0,0,0);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            
+            Button btnDel = new Button(MainActivity.this);
+            btnDel.setText("🗑️");
+            btnDel.setTextSize(10);
+            btnDel.setWidth(25);
+            btnDel.setHeight(25);
+            btnDel.setBackgroundColor(Color.TRANSPARENT);
+            btnDel.setTextColor(Color.parseColor("#ff6b6b"));
+            btnDel.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
+                        eventsByDate.get(selectedDate).remove(position);
+                        saveData();
+                        updateDayEventsDisplay();
+                        if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
+                    }
+                }
+            });
+            
+            row.addView(btnCheck);
+            row.addView(tv);
+            row.addView(btnDel);
+            return row;
+        }
+    }
+
+    private void showAddTodoDialog() {
         EditText input = new EditText(this);
         input.setHint("Scrivi nota...");
         input.setBackgroundColor(Color.parseColor("#1a1a2e"));
@@ -179,44 +321,33 @@ public class MainActivity extends Activity {
                 @Override public void onClick(DialogInterface d, int w) {
                     String val = input.getText().toString().trim();
                     if(!val.isEmpty()) {
-                        if(position == -1) todos.add(0, val); else todos.set(position, val);
+                        todos.add(0, new TodoItem(val, false));
                         saveData(); todoAdapter.notifyDataSetChanged();
                     }
                 }
             }).setNegativeButton("Annulla", null).show();
     }
 
-    private void toggleDone(int position) {
-        String t = todos.get(position);
-        todos.set(position, t.startsWith("✅ ") ? t.substring(2) : "✅ "+t);
-        saveData(); todoAdapter.notifyDataSetChanged();
-    }
-
-    private void deleteTodo(int position) {
-        todos.remove(position);
-        saveData(); todoAdapter.notifyDataSetChanged();
-    }
-
-    private void showAddEventDialog(final String selectedDate) {
+    private void showAddEventDialog(final String preselectedDate) {
         final EditText dateInput = new EditText(this);
         final EditText timeInput = new EditText(this);
         final EditText descInput = new EditText(this);
         
-        dateInput.setHint("Data (es: 2024-01-20)");
-        timeInput.setHint("Ora (es: 15:30)");
+        dateInput.setHint("Data (YYYY-MM-DD)");
+        timeInput.setHint("Ora (opzionale)");
         descInput.setHint("Descrizione");
         
-        if(selectedDate != null) {
-            dateInput.setText(selectedDate);
+        if(preselectedDate != null) {
+            dateInput.setText(preselectedDate);
             dateInput.setEnabled(false);
+        } else {
+            dateInput.setText(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
         }
         
-        dateInput.setBackgroundColor(Color.parseColor("#1a1a2e"));
-        timeInput.setBackgroundColor(Color.parseColor("#1a1a2e"));
-        descInput.setBackgroundColor(Color.parseColor("#1a1a2e"));
-        dateInput.setTextColor(Color.parseColor("#e0e0f0"));
-        timeInput.setTextColor(Color.parseColor("#e0e0f0"));
-        descInput.setTextColor(Color.parseColor("#e0e0f0"));
+        for(EditText et : new EditText[]{dateInput, timeInput, descInput}) {
+            et.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            et.setTextColor(Color.parseColor("#e0e0f0"));
+        }
         
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -234,14 +365,27 @@ public class MainActivity extends Activity {
                     String time = timeInput.getText().toString().trim();
                     String desc = descInput.getText().toString().trim();
                     if(!date.isEmpty() && !desc.isEmpty()) {
-                        String entry = (time.isEmpty() ? "" : time+" - ") + desc;
-                        if(!eventsByDate.containsKey(date)) eventsByDate.put(date, new ArrayList<String>());
-                        eventsByDate.get(date).add(entry);
+                        if(!eventsByDate.containsKey(date)) eventsByDate.put(date, new ArrayList<EventItem>());
+                        eventsByDate.get(date).add(new EventItem(time, desc, false));
                         saveData();
                         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
+                        if(date.equals(selectedDate)) updateDayEventsDisplay();
                     }
                 }
             }).setNegativeButton("Annulla", null).show();
+    }
+
+    private void updateDayEventsDisplay() {
+        if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
+            dayEvents = eventsByDate.get(selectedDate);
+            String[] months = {"Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"};
+            String displayDate = selectedDate.substring(8)+" "+months[Integer.parseInt(selectedDate.substring(5,7))-1];
+            selectedDayTitle.setText("📅 "+displayDate);
+            dayEventsPanel.setVisibility(View.VISIBLE);
+            dayEventsAdapter.notifyDataSetChanged();
+        } else {
+            dayEventsPanel.setVisibility(View.GONE);
+        }
     }
 
     private void updateCalendarDisplay() {
@@ -250,6 +394,7 @@ public class MainActivity extends Activity {
         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
     }
 
+    // Adapter per griglia calendario con giorni GRANDI
     private class CalendarAdapter extends BaseAdapter {
         @Override public int getCount() { return 42; } // 6 righe x 7 giorni
         @Override public Object getItem(int pos) { return null; }
@@ -257,38 +402,63 @@ public class MainActivity extends Activity {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            TextView tv = new TextView(MainActivity.this);
-            tv.setGravity(Gravity.CENTER);
-            tv.setPadding(2,4,2,4);
-            tv.setTextSize(12);
-            tv.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            LinearLayout cell = new LinearLayout(MainActivity.this);
+            cell.setOrientation(LinearLayout.VERTICAL);
+            cell.setGravity(Gravity.CENTER);
+            cell.setPadding(2,3,2,3);
+            cell.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            cell.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, 55)); // CELLE ALTE 55px!
             
             Calendar cal = (Calendar) currentCal.clone();
             cal.set(Calendar.DAY_OF_MONTH, 1);
-            int firstDay = cal.get(Calendar.DAY_OF_WEEK); // 1=Dom, 2=Lun...
-            int offset = (firstDay == Calendar.SUNDAY) ? 6 : firstDay - 2; // ajusta per Lun=0
+            int firstDay = cal.get(Calendar.DAY_OF_WEEK);
+            int offset = (firstDay == Calendar.SUNDAY) ? 6 : firstDay - 2;
             int dayNum = position - offset + 1;
             
             cal.add(Calendar.DAY_OF_MONTH, position - offset);
             String dateKey = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
             boolean hasEvents = eventsByDate.containsKey(dateKey) && !eventsByDate.get(dateKey).isEmpty();
             boolean isCurrentMonth = cal.get(Calendar.MONTH) == currentCal.get(Calendar.MONTH);
+            boolean isToday = dateKey.equals(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
+            
+            TextView tvDay = new TextView(MainActivity.this);
+            tvDay.setGravity(Gravity.CENTER);
+            tvDay.setTextSize(16); // FONT GRANDE!
+            tvDay.setTextColor(Color.parseColor("#b0b0c0"));
+            tvDay.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+            
+            TextView dot = new TextView(MainActivity.this);
+            dot.setGravity(Gravity.CENTER);
+            dot.setTextSize(10);
+            dot.setTextColor(Color.parseColor("#ffd700"));
+            dot.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 0.3f));
             
             if(dayNum < 1 || dayNum > cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isCurrentMonth) {
-                tv.setText("");
-                tv.setTextColor(Color.parseColor("#333344"));
+                tvDay.setText("");
+                dot.setText("");
+                cell.setBackgroundColor(Color.parseColor("#0f0f1a"));
             } else {
-                tv.setText(String.valueOf(dayNum));
-                tv.setTextColor(hasEvents ? Color.parseColor("#d4af37") : Color.parseColor("#b0b0c0"));
-                if(hasEvents) tv.setText(dayNum + "●");
+                tvDay.setText(String.valueOf(dayNum));
+                if(isToday) {
+                    tvDay.setTextColor(Color.parseColor("#ffd700"));
+                    tvDay.setText("●"+dayNum);
+                } else if(hasEvents) {
+                    tvDay.setTextColor(Color.parseColor("#ffd700"));
+                    dot.setText("●");
+                }
             }
             
             final String clickDate = dateKey;
-            tv.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { showAddEventDialog(clickDate); }
+            cell.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    selectedDate = clickDate;
+                    updateDayEventsDisplay();
+                }
             });
             
-            return tv;
+            cell.addView(tvDay);
+            cell.addView(dot);
+            return cell;
         }
     }
 
@@ -308,7 +478,8 @@ public class MainActivity extends Activity {
             @Override
             protected String doInBackground(Void... params) {
                 try {
-                    HttpURLConnection conn = (HttpURLConnection) new URL("http://wttr.in/Foggia,Italy?format=j1").openConnection();
+                    // wttr.in con formato JSON per vento
+                    HttpURLConnection conn = (HttpURLConnection) new URL("http://wttr.in/Foggia,Italy?format=j1&lang=it").openConnection();
                     conn.setRequestMethod("GET");
                     conn.setConnectTimeout(5000);
                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -330,7 +501,9 @@ public class MainActivity extends Activity {
                     StringBuilder sb = new StringBuilder();
                     sb.append("✨ ").append(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")).append("\n");
                     sb.append("🌡️ ").append(cur.getString("temp_C")).append("°C  ");
-                    sb.append("💧 ").append(cur.getString("humidity")).append("%\n\n");
+                    sb.append("💧 ").append(cur.getString("humidity")).append("%\n");
+                    sb.append("💨 ").append(cur.getString("windspeedKmph")).append(" km/h ");
+                    sb.append(cur.getString("winddir16Point")).append("\n\n");
                     sb.append("📅 Prossimi 3 giorni:\n");
                     for (int i = 0; i < Math.min(3, weather.length()); i++) {
                         JSONObject d = weather.getJSONObject(i);

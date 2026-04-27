@@ -2,20 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#0f0f1e"
+    android:background="#0a0a1a"
     android:orientation="vertical"
-    android:padding="6dp"
+    android:padding="5dp"
     android:weightSum="10">
 
-    <!-- RIGA 1: Orologio + Meteo Luxury (20%) -->
+    <!-- RIGA 1: Orologio + Meteo Luxury (18%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="2"
+        android:layout_weight="1.8"
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- Orologio Luxury -->
+        <!-- Orologio -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -27,14 +27,14 @@
             android:padding="8dp">
             <TextView android:id="@+id/clock"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="40dp" android:textStyle="bold"
-                android:textColor="#d4af37" android:shadowColor="#000" android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4"/>
+                android:textSize="38dp" android:textStyle="bold"
+                android:textColor="#ffd700" android:shadowColor="#000" android:shadowDx="1" android:shadowDy="1" android:shadowRadius="3"/>
             <TextView android:id="@+id/date"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="15dp" android:textColor="#b0b0c0" android:textStyle="bold"/>
+                android:textSize="14dp" android:textColor="#c0c0e0" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Meteo Luxury -->
+        <!-- Meteo Luxury con vento -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -44,85 +44,93 @@
             android:orientation="vertical"
             android:padding="8dp">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🌤️ Foggia, Italia" android:textSize="16dp"
-                android:textStyle="bold" android:textColor="#d4af37"/>
+                android:text="🌤️ Foggia, IT" android:textSize="15dp"
+                android:textStyle="bold" android:textColor="#ffd700"/>
             <ScrollView android:layout_width="fill_parent" android:layout_height="fill_parent">
                 <TextView android:id="@+id/weatherText"
                     android:layout_width="fill_parent" android:layout_height="wrap_content"
-                    android:textSize="13dp" android:textColor="#e0e0f0"
-                    android:lineSpacingExtra="2dp"/>
+                    android:textSize="12dp" android:textColor="#e8e8ff"
+                    android:lineSpacingExtra="3dp"/>
             </ScrollView>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- RIGA 2: Calendario + Note (80%) -->
+    <!-- RIGA 2: Calendario + Note (82%) -->
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="8"
-        android:layout_marginTop="6dp"
+        android:layout_weight="8.2"
+        android:layout_marginTop="5dp"
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- Calendario Mensile (60%) -->
+        <!-- CALENDARIO MENSILE GRANDE (62%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="6"
+            android:layout_weight="6.2"
             android:layout_marginRight="3dp"
             android:background="@drawable/card"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="5dp">
             
             <!-- Header Calendario -->
-            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="4dp">
-                <Button android:id="@+id/btnPrevMonth" android:text="◀" android:layout_width="30dp" android:layout_height="30dp" android:textSize="14dp" android:background="#2d2d44" android:textColor="#d4af37"/>
-                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gennaio 2024" android:textSize="16dp" android:textStyle="bold" android:textColor="#d4af37" android:gravity="center"/>
-                <Button android:id="@+id/btnNextMonth" android:text="▶" android:layout_width="30dp" android:layout_height="30dp" android:textSize="14dp" android:background="#2d2d44" android:textColor="#d4af37"/>
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="3dp">
+                <Button android:id="@+id/btnPrevMonth" android:text="◀" android:layout_width="28dp" android:layout_height="28dp" android:textSize="12dp" android:background="#2d2d4a" android:textColor="#ffd700"/>
+                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gennaio 2024" android:textSize="15dp" android:textStyle="bold" android:textColor="#ffd700" android:gravity="center"/>
+                <Button android:id="@+id/btnNextMonth" android:text="▶" android:layout_width="28dp" android:layout_height="28dp" android:textSize="12dp" android:background="#2d2d4a" android:textColor="#ffd700"/>
             </LinearLayout>
             
             <!-- Giorni della settimana -->
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:weightSum="7" android:paddingBottom="2dp">
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Lun" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mar" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Mer" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gio" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Ven" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Sab" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Dom" android:textSize="10dp" android:textColor="#888" android:gravity="center"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="L" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="M" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="M" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="G" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="V" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="S" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="D" android:textSize="11dp" android:textColor="#8888aa" android:gravity="center" android:textStyle="bold"/>
             </LinearLayout>
             
-            <!-- Griglia giorni -->
+            <!-- Griglia giorni GRANDI -->
             <GridView android:id="@+id/calendarGrid"
                 android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1"
-                android:numColumns="7" android:verticalSpacing="2dp" android:horizontalSpacing="2dp"
+                android:numColumns="7" android:verticalSpacing="3dp" android:horizontalSpacing="3dp"
                 android:stretchMode="columnWidth"/>
             
+            <!-- Pannello appuntamenti del giorno selezionato -->
+            <LinearLayout android:id="@+id/dayEventsPanel" android:layout_width="fill_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="#15152a" android:padding="4dp" android:visibility="gone">
+                <TextView android:id="@+id/selectedDayTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="📅 Appuntamenti del giorno" android:textSize="13dp" android:textColor="#ffd700" android:textStyle="bold" android:paddingBottom="3dp"/>
+                <ListView android:id="@+id/dayEventsList" android:layout_width="fill_parent" android:layout_height="80dp"
+                    android:divider="#2d2d4a" android:dividerHeight="1dp"/>
+            </LinearLayout>
+            
             <!-- Pulsante Aggiungi -->
-            <Button android:id="@+id/btnAddEvt" android:layout_width="fill_parent" android:layout_height="35dp"
-                android:text="➕ Aggiungi Appuntamento" android:textSize="13dp"
-                android:textColor="#0f0f1e" android:background="#d4af37" android:textStyle="bold"/>
+            <Button android:id="@+id/btnAddEvt" android:layout_width="fill_parent" android:layout_height="32dp"
+                android:text="➕ Nuovo Appuntamento" android:textSize="12dp"
+                android:textColor="#0a0a1a" android:background="#ffd700" android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- Note Luxury (40%) -->
+        <!-- NOTE CON PULSANTI VISIBILI (38%) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:layout_weight="4"
+            android:layout_weight="3.8"
             android:layout_marginLeft="3dp"
             android:background="@drawable/card"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="5dp">
             
-            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="4dp">
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="16dp" android:textStyle="bold" android:textColor="#d4af37"/>
-                <Button android:id="@+id/btnAddTodo" android:text="➕" android:layout_width="32dp" android:layout_height="32dp" android:textSize="16dp" android:textColor="#0f0f1e" android:background="#d4af37"/>
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="3dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="15dp" android:textStyle="bold" android:textColor="#ffd700"/>
+                <Button android:id="@+id/btnAddTodo" android:text="➕" android:layout_width="30dp" android:layout_height="30dp" android:textSize="14dp" android:textColor="#0a0a1a" android:background="#ffd700"/>
             </LinearLayout>
             
             <ListView android:id="@+id/todoList"
                 android:layout_width="fill_parent" android:layout_height="fill_parent"
-                android:divider="#2d2d44" android:dividerHeight="1dp"
-                android:clickable="true" android:focusable="true"/>
+                android:divider="#2d2d4a" android:dividerHeight="1dp"/>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
