@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,7 +13,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -103,7 +103,6 @@ public class MainActivity extends Activity {
         loadWeather();
         startWeatherRefresh();
 
-        // Pulsanti navigazione
         btnAddEvt.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showAddEventDialog(selectedDate); }
         });
@@ -192,7 +191,7 @@ public class MainActivity extends Activity {
         dayEventsList.setAdapter(dayEventsAdapter);
     }
 
-    // Adapter Note con pulsanti ✅ e 🗑️
+    // Adapter NOTE con pulsanti ✅ e 🗑️ VISIBILI
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos.size(); }
         @Override public Object getItem(int pos) { return todos.get(pos); }
@@ -201,18 +200,21 @@ public class MainActivity extends Activity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setPadding(4,3,4,3);
+            row.setPadding(5,5,5,5);
             row.setBackgroundColor(Color.parseColor("#1a1a2e"));
+            row.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                LinearLayout.LayoutParams.WRAP_CONTENT));
             
+            // Pulsante CHECK ✅ - GRANDE E VISIBILE
             Button btnCheck = new Button(MainActivity.this);
             btnCheck.setText(todos.get(position).done ? "✅" : "⬜");
-            btnCheck.setTextSize(14);
-            btnCheck.setWidth(35);
-            btnCheck.setHeight(35);
-            btnCheck.setBackgroundColor(Color.TRANSPARENT);
+            btnCheck.setTextSize(16);
+            btnCheck.setWidth(45);
+            btnCheck.setHeight(45);
+            btnCheck.setBackgroundColor(Color.parseColor("#2d2d4a"));
             btnCheck.setTextColor(Color.parseColor("#ffd700"));
-            btnCheck.setClickable(true);
-            btnCheck.setFocusable(true);
+            btnCheck.setGravity(Gravity.CENTER);
             btnCheck.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     todos.get(position).done = !todos.get(position).done;
@@ -221,27 +223,39 @@ public class MainActivity extends Activity {
                 }
             });
             
+            // Testo NOTA
             TextView tv = new TextView(MainActivity.this);
             tv.setText(todos.get(position).text);
-            tv.setTextColor(todos.get(position).done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e0e0f0"));
+            tv.setTextColor(todos.get(position).done ? Color.parseColor("#6a6a8a") : Color.parseColor("#ffffff"));
+            tv.setTextSize(14);
             tv.setGravity(Gravity.CENTER_VERTICAL);
-            tv.setPadding(6,0,0,0);
+            tv.setPadding(8,0,8,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             
+            // Pulsante ELIMINA 🗑️ - GRANDE E VISIBILE (ROSSO)
             Button btnDel = new Button(MainActivity.this);
             btnDel.setText("🗑️");
-            btnDel.setTextSize(12);
-            btnDel.setWidth(30);
-            btnDel.setHeight(30);
-            btnDel.setBackgroundColor(Color.TRANSPARENT);
-            btnDel.setTextColor(Color.parseColor("#ff6b6b"));
-            btnDel.setClickable(true);
-            btnDel.setFocusable(true);
+            btnDel.setTextSize(16);
+            btnDel.setWidth(45);
+            btnDel.setHeight(45);
+            btnDel.setBackgroundColor(Color.parseColor("#dc143c"));
+            btnDel.setTextColor(Color.parseColor("#ffffff"));
+            btnDel.setGravity(Gravity.CENTER);
             btnDel.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    todos.remove(position);
-                    saveData(); 
-                    notifyDataSetChanged();
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Elimina Nota")
+                        .setMessage("Sei sicuro di voler eliminare questa nota?")
+                        .setPositiveButton("Sì", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                todos.remove(position);
+                                saveData(); 
+                                notifyDataSetChanged();
+                            }
+                        })
+                        .setNegativeButton("No", null)
+                        .show();
                 }
             });
             
@@ -252,7 +266,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter Eventi giorno con pulsanti
+    // Adapter EVENTI con pulsanti ✅ e 🗑️ VISIBILI
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents.size(); }
         @Override public Object getItem(int pos) { return dayEvents.get(pos); }
@@ -261,18 +275,21 @@ public class MainActivity extends Activity {
         public View getView(final int position, View convertView, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setPadding(3,2,3,2);
+            row.setPadding(4,4,4,4);
             row.setBackgroundColor(Color.parseColor("#15152a"));
+            row.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                LinearLayout.LayoutParams.WRAP_CONTENT));
             
+            // Pulsante CHECK ✅
             Button btnCheck = new Button(MainActivity.this);
             btnCheck.setText(dayEvents.get(position).done ? "✅" : "⬜");
-            btnCheck.setTextSize(12);
-            btnCheck.setWidth(30);
-            btnCheck.setHeight(30);
-            btnCheck.setBackgroundColor(Color.TRANSPARENT);
+            btnCheck.setTextSize(14);
+            btnCheck.setWidth(40);
+            btnCheck.setHeight(40);
+            btnCheck.setBackgroundColor(Color.parseColor("#2d2d4a"));
             btnCheck.setTextColor(Color.parseColor("#ffd700"));
-            btnCheck.setClickable(true);
-            btnCheck.setFocusable(true);
+            btnCheck.setGravity(Gravity.CENTER);
             btnCheck.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     dayEvents.get(position).done = !dayEvents.get(position).done;
@@ -284,36 +301,47 @@ public class MainActivity extends Activity {
                 }
             });
             
+            // Testo EVENTO
             TextView tv = new TextView(MainActivity.this);
             EventItem evt = dayEvents.get(position);
             tv.setText(evt.display());
             tv.setTextColor(evt.done ? Color.parseColor("#6a6a8a") : Color.parseColor("#e8e8ff"));
-            tv.setTextSize(11);
+            tv.setTextSize(12);
             tv.setGravity(Gravity.CENTER_VERTICAL);
-            tv.setPadding(4,0,0,0);
+            tv.setPadding(6,0,6,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             
+            // Pulsante ELIMINA 🗑️
             Button btnDel = new Button(MainActivity.this);
             btnDel.setText("🗑️");
-            btnDel.setTextSize(10);
-            btnDel.setWidth(25);
-            btnDel.setHeight(25);
-            btnDel.setBackgroundColor(Color.TRANSPARENT);
-            btnDel.setTextColor(Color.parseColor("#ff6b6b"));
-            btnDel.setClickable(true);
-            btnDel.setFocusable(true);
+            btnDel.setTextSize(14);
+            btnDel.setWidth(40);
+            btnDel.setHeight(40);
+            btnDel.setBackgroundColor(Color.parseColor("#dc143c"));
+            btnDel.setTextColor(Color.parseColor("#ffffff"));
+            btnDel.setGravity(Gravity.CENTER);
             btnDel.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
-                        eventsByDate.get(selectedDate).remove(position);
-                        dayEvents.remove(position);
-                        saveData();
-                        notifyDataSetChanged();
-                        if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
-                        if(dayEvents.isEmpty()) {
-                            dayEventsPanel.setVisibility(View.GONE);
-                        }
-                    }
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Elimina Appuntamento")
+                        .setMessage("Sei sicuro di voler eliminare questo appuntamento?")
+                        .setPositiveButton("Sì", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if(selectedDate != null && eventsByDate.containsKey(selectedDate)) {
+                                    eventsByDate.get(selectedDate).remove(position);
+                                    dayEvents.remove(position);
+                                    saveData();
+                                    notifyDataSetChanged();
+                                    if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
+                                    if(dayEvents.isEmpty()) {
+                                        dayEventsPanel.setVisibility(View.GONE);
+                                    }
+                                }
+                            }
+                        })
+                        .setNegativeButton("No", null)
+                        .show();
                 }
             });
             
@@ -328,7 +356,7 @@ public class MainActivity extends Activity {
         EditText input = new EditText(this);
         input.setHint("Scrivi nota...");
         input.setBackgroundColor(Color.parseColor("#1a1a2e"));
-        input.setTextColor(Color.parseColor("#e0e0f0"));
+        input.setTextColor(Color.parseColor("#ffffff"));
         new AlertDialog.Builder(this)
             .setTitle("Nuova Nota")
             .setView(input)
@@ -361,7 +389,7 @@ public class MainActivity extends Activity {
         
         for(EditText et : new EditText[]{dateInput, timeInput, descInput}) {
             et.setBackgroundColor(Color.parseColor("#1a1a2e"));
-            et.setTextColor(Color.parseColor("#e0e0f0"));
+            et.setTextColor(Color.parseColor("#ffffff"));
         }
         
         LinearLayout layout = new LinearLayout(this);
@@ -413,7 +441,6 @@ public class MainActivity extends Activity {
         if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged();
     }
 
-    // Adapter Calendario con click funzionante
     private class CalendarAdapter extends BaseAdapter {
         @Override public int getCount() { return 42; }
         @Override public Object getItem(int pos) { return null; }
@@ -526,7 +553,6 @@ public class MainActivity extends Activity {
                     JSONObject cur = json.getJSONArray("current_condition").getJSONObject(0);
                     JSONArray weather = json.getJSONArray("weather");
                     
-                    // Icona meteo
                     String weatherCode = cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
                     String icon = "☀️";
                     if(weatherCode.contains("nuvol") || weatherCode.contains("cloud")) icon = "☁️";
@@ -539,13 +565,12 @@ public class MainActivity extends Activity {
                     weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value"));
                     weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
                     
-                    // Previsioni 7 giorni
                     forecastContainer.removeAllViews();
                     TextView title = new TextView(MainActivity.this);
                     title.setText("📅 Previsioni 7 giorni");
                     title.setTextColor(Color.parseColor("#ffd700"));
                     title.setTextSize(11);
-                    title.setTypeface(null, android.graphics.Typeface.BOLD);
+                    title.setTypeface(null, Typeface.BOLD);
                     title.setPadding(0,0,0,4);
                     forecastContainer.addView(title);
                     
