@@ -423,51 +423,73 @@ public class MainActivity extends Activity {
     private void startClock() { clockHandler.postDelayed(new Runnable(){ public void run(){ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this,1000); } catch(Exception ignored) {} }},1000); }
 
     private void loadWeather() {
-        new AsyncTask<Void,Void,String>() { @Override protected String doInBackground(Void... p) { try { HttpURLConnection c=(HttpURLConnection)new URL("https://api.open-meteo.com/v1/forecast?latitude=41.46&longitude=15.54&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Rome&forecast_days=1").openConnection(); c.setRequestMethod("GET"); c.setConnectTimeout(5000); BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream())); StringBuilder s=new StringBuilder(); String l; while((l=r.readLine())!=null) s.append(l); r.close(); return s.toString(); } catch(Exception e) { return "ERRORE"; }}
-        @Override protected void onPostExecute(String res) {
-            try { if(res.equals("ERRORE")) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Offline"); return; }
-                JSONObject j=new JSONObject(res);
-                JSONObject cur=j.getJSONObject("current");
-                JSONObject daily=j.getJSONObject("daily");
-                JSONObject hourlyObj = j.getJSONObject("hourly");
+        new AsyncTask<Void,Void,String>() { 
+            @Override protected String doInBackground(Void... p) { 
+                try { 
+                    HttpURLConnection c=(HttpURLConnection)new URL("http://api.open-meteo.com/v1/forecast?latitude=41.46&longitude=15.54&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Rome&forecast_days=1").openConnection(); 
+                    c.setRequestMethod("GET"); 
+                    c.setConnectTimeout(8000); 
+                    c.setReadTimeout(8000); 
+                    BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream())); 
+                    StringBuilder s=new StringBuilder(); String l; while((l=r.readLine())!=null) s.append(l); r.close(); return s.toString(); 
+                } catch(Exception e) { return "ERRORE"; } 
+            }
+            @Override protected void onPostExecute(String res) {
+                try { 
+                    if(res.equals("ERRORE")) { 
+                        if(weatherIcon!=null) weatherIcon.setText("✖"); 
+                        if(weatherTemp!=null) weatherTemp.setText("Offline"); 
+                        return; 
+                    }
+                    JSONObject j=new JSONObject(res);
+                    JSONObject cur=j.getJSONObject("current");
+                    JSONObject daily=j.getJSONObject("daily");
+                    JSONObject hourlyObj = j.getJSONObject("hourly");
 
-                int code=cur.optInt("weather_code",0);
-                if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code));
-                if(weatherTemp!=null) weatherTemp.setText(cur.optString("temperature_2m","?")+"°C");
-                if(weatherCondition!=null) weatherCondition.setText(getWeatherText(code));
-                if(weatherMinMax!=null) weatherMinMax.setText("Min "+daily.optString("temperature_2m_min","?")+"°C | Max "+daily.optString("temperature_2m_max","?")+"°C");
-                if(weatherDetails!=null) {
-                    String wind=getWindDirection(cur.optDouble("wind_direction_10m",0));
-                    weatherDetails.setText("💨 "+cur.optString("wind_speed_10m","?")+" km/h "+wind+" | 💧 "+cur.optString("relative_humidity_2m","?")+"% | 🌧 0%");
-                }
+                    int code=cur.optInt("weather_code",0);
+                    if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code));
+                    if(weatherTemp!=null) weatherTemp.setText(cur.optString("temperature_2m","?")+"°C");
+                    if(weatherCondition!=null) weatherCondition.setText(getWeatherText(code));
+                    if(weatherMinMax!=null) weatherMinMax.setText("Min "+daily.optString("temperature_2m_min","?")+"°C | Max "+daily.optString("temperature_2m_max","?")+"°C");
+                    if(weatherDetails!=null) {
+                        String wind=getWindDirection(cur.optDouble("wind_direction_10m",0));
+                        weatherDetails.setText("💨 "+cur.optString("wind_speed_10m","?")+" km/h "+wind+" | 💧 "+cur.optString("relative_humidity_2m","?")+"% | 🌧 0%");
+                    }
 
-                // Orario
-                if(hourlyContainer!=null) { hourlyContainer.removeAllViews();
-                    try {
-                        JSONArray hTime=hourlyObj.getJSONArray("time");
-                        JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
-                        JSONArray hCode=hourlyObj.getJSONArray("weather_code");
-                        int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-                        int count=0;
-                        for(int i=0; i<hTime.length() && count<9; i++) {
-                            String t=hTime.getString(i);
-                            int h=Integer.parseInt(t.substring(11,13));
-                            if(h>=nowH-1) {
-                                int temp=(int)Math.round(hTemp.getDouble(i));
-                                int wCode=hCode.optInt(i,0);
-                                LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,8,0);
-                                TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(11);
-                                TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(14);
-                                TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(10);
-                                item.addView(tvH); item.addView(tvI); item.addView(tvT);
-                                hourlyContainer.addView(item);
-                                count++;
+                    if(hourlyContainer!=null) { 
+                        hourlyContainer.removeAllViews();
+                        try {
+                            JSONArray hTime=hourlyObj.getJSONArray("time");
+                            JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
+                            JSONArray hCode=hourlyObj.getJSONArray("weather_code");
+                            int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+                            int count=0;
+                            for(int i=0; i<hTime.length() && count<9; i++) {
+                                String t=hTime.getString(i);
+                                int h=Integer.parseInt(t.substring(11,13));
+                                if(h>=nowH-1) {
+                                    int temp=(int)Math.round(hTemp.getDouble(i));
+                                    int wCode=hCode.optInt(i,0);
+                                    LinearLayout item=new LinearLayout(MainActivity.this); 
+                                    item.setOrientation(LinearLayout.VERTICAL); 
+                                    item.setGravity(Gravity.CENTER); 
+                                    item.setPadding(0,0,8,0);
+                                    TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(11);
+                                    TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(14);
+                                    TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(10);
+                                    item.addView(tvH); item.addView(tvI); item.addView(tvT);
+                                    hourlyContainer.addView(item);
+                                    count++;
+                                }
                             }
-                        }
-                    } catch(Exception ignored) {}
+                        } catch(Exception ignored) {}
+                    }
+                } catch(Exception e) { 
+                    if(weatherIcon!=null) weatherIcon.setText("✖"); 
+                    if(weatherTemp!=null) weatherTemp.setText("Errore"); 
                 }
-            } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
-        } }.execute();
+            } 
+        }.execute();
     }
 
     private String getWeatherEmoji(int code) {
