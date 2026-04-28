@@ -28,8 +28,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.TranslateAnimation;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -83,44 +81,50 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "DashboardPietro:WakeLock");
-        setContentView(R.layout.activity_main);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        setupFullScreen();
-        validateAndLoadPrefs();
-        applyTheme();
-        applyThemeByTime();
-
         try {
-            clockText = (TextView) findViewById(R.id.clock); dateText = (TextView) findViewById(R.id.date); smartHomeText = (TextView) findViewById(R.id.smartHomeText);
-            batteryText = (TextView) findViewById(R.id.batteryText); weatherIcon = (TextView) findViewById(R.id.weatherIcon); weatherTemp = (TextView) findViewById(R.id.weatherTemp);
-            weatherDesc = (TextView) findViewById(R.id.weatherDesc); weatherWind = (TextView) findViewById(R.id.weatherWind); calendarMonth = (TextView) findViewById(R.id.calendarMonth);
-            calendarGrid = (GridView) findViewById(R.id.calendarGrid); todoList = (ListView) findViewById(R.id.todoList); dayEventsList = (ListView) findViewById(R.id.dayEventsList);
-            dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel); forecastContainer = (LinearLayout) findViewById(R.id.forecastContainer); selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
-            btnAddEvt = (Button) findViewById(R.id.btnAddEvt); btnAddTodo = (Button) findViewById(R.id.btnAddTodo); btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
-            btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather); btnQuickControls = (Button) findViewById(R.id.btnQuickControls);
-            btnVoice = (Button) findViewById(R.id.btnVoice);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "DashboardPietro:WakeLock");
+            setContentView(R.layout.activity_main);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-            prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE); loadData(); setupAdapters(); registerBatteryReceiver();
+            clockText = findViewById(R.id.clock); dateText = findViewById(R.id.date); smartHomeText = findViewById(R.id.smartHomeText);
+            batteryText = findViewById(R.id.batteryText); weatherIcon = findViewById(R.id.weatherIcon); weatherTemp = findViewById(R.id.weatherTemp);
+            weatherDesc = findViewById(R.id.weatherDesc); weatherWind = findViewById(R.id.weatherWind); calendarMonth = findViewById(R.id.calendarMonth);
+            calendarGrid = findViewById(R.id.calendarGrid); todoList = findViewById(R.id.todoList); dayEventsList = findViewById(R.id.dayEventsList);
+            dayEventsPanel = findViewById(R.id.dayEventsPanel); forecastContainer = findViewById(R.id.forecastContainer); selectedDayTitle = findViewById(R.id.selectedDayTitle);
+            btnAddEvt = findViewById(R.id.btnAddEvt); btnAddTodo = findViewById(R.id.btnAddTodo); btnPrevMonth = findViewById(R.id.btnPrevMonth);
+            btnNextMonth = findViewById(R.id.btnNextMonth); btnRefreshWeather = findViewById(R.id.btnRefreshWeather); btnQuickControls = findViewById(R.id.btnQuickControls);
+            btnVoice = findViewById(R.id.btnVoice);
+
+            prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
+            validateAndLoadPrefs();
+            applyTheme();
+            loadData(); setupAdapters(); registerBatteryReceiver();
             currentCal = Calendar.getInstance(); calendarAdapter = new CalendarAdapter();
             if(calendarGrid != null) { calendarGrid.setAdapter(calendarAdapter); updateCalendarDisplay(); }
+
             clockHandler = new Handler(Looper.getMainLooper()); weatherHandler = new Handler(Looper.getMainLooper());
             statsHandler = new Handler(Looper.getMainLooper());
             startClock(); loadWeather(); startWeatherRefresh(); startStatsUpdater();
 
-            btnAddEvt.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showAddEventDialog(selectedDate); } });
-            btnAddTodo.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showAddTodoDialog(); } });
-            btnVoice.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { startVoiceInput(); } });
-            btnPrevMonth.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); } });
-            btnNextMonth.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); } });
-            btnRefreshWeather.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { loadWeather(); } });
-            btnQuickControls.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showQuickControls(); } });
-            if(clockText != null) clockText.setOnLongClickListener(new View.OnLongClickListener() { @Override public boolean onLongClick(View v) { showSettingsMenu(); return true; } });
-        } catch(Exception e) { e.printStackTrace(); }
+            if(btnAddEvt != null) btnAddEvt.setOnClickListener(v -> showAddEventDialog(selectedDate));
+            if(btnAddTodo != null) btnAddTodo.setOnClickListener(v -> showAddTodoDialog());
+            if(btnVoice != null) btnVoice.setOnClickListener(v -> startVoiceInput());
+            if(btnPrevMonth != null) btnPrevMonth.setOnClickListener(v -> { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); });
+            if(btnNextMonth != null) btnNextMonth.setOnClickListener(v -> { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); });
+            if(btnRefreshWeather != null) btnRefreshWeather.setOnClickListener(v -> loadWeather());
+            if(btnQuickControls != null) btnQuickControls.setOnClickListener(v -> showQuickControls());
+            if(clockText != null) clockText.setOnLongClickListener(v -> { showSettingsMenu(); return true; });
+
+            setupFullScreen();
+            applyThemeByTime();
+        } catch(Exception e) {
+            e.printStackTrace();
+            showAlert("Errore Avvio", "Impossibile inizializzare l'app. " + e.getMessage());
+        }
     }
 
     private void validateAndLoadPrefs() {
@@ -131,36 +135,42 @@ public class MainActivity extends Activity {
             if(json != null) new JSONObject(json);
         } catch(Exception e) {
             prefs.edit().clear().commit();
-            showAlert("Prefs corrotte", "Dati resettati alle impostazioni di fabbrica.");
+            showAlert("Prefs corrotte", "Dati resettati automaticamente.");
         }
     }
 
     private void applyTheme() {
-        String theme = prefs.getString("theme", "classic");
-        int bg = Color.parseColor("#000000");
-        if(theme.equals("night")) bg = Color.parseColor("#050510");
-        else if(theme.equals("ocean")) bg = Color.parseColor("#0A1A2A");
-        findViewById(android.R.id.content).getRootView().setBackgroundColor(bg);
+        try {
+            String theme = prefs.getString("theme", "classic");
+            int bg = Color.parseColor("#000000");
+            if("night".equals(theme)) bg = Color.parseColor("#050510");
+            else if("ocean".equals(theme)) bg = Color.parseColor("#0A1A2A");
+            View root = findViewById(android.R.id.content).getRootView();
+            if(root != null) root.setBackgroundColor(bg);
+        } catch(Exception ignored) {}
     }
 
     private void setupFullScreen() {
-        View decor = getWindow().getDecorView();
-        int uiFlags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
-        decor.setSystemUiVisibility(uiFlags);
-        decor.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override public void onSystemUiVisibilityChange(int visibility) { if (visibility == 0) decor.setSystemUiVisibility(uiFlags); }
-        });
-        View root = findViewById(android.R.id.content).getRootView();
-        root.setSystemUiVisibility(uiFlags);
-        root.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override public void onSystemUiVisibilityChange(int visibility) { if (visibility == 0) root.setSystemUiVisibility(uiFlags); }
-        });
+        try {
+            View decor = getWindow().getDecorView();
+            int uiFlags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
+            decor.setSystemUiVisibility(uiFlags);
+            decor.setOnSystemUiVisibilityChangeListener(v -> { if (v == 0) decor.setSystemUiVisibility(uiFlags); });
+            View root = findViewById(android.R.id.content).getRootView();
+            if(root != null) {
+                root.setSystemUiVisibility(uiFlags);
+                root.setOnSystemUiVisibilityChangeListener(v -> { if (v == 0) root.setSystemUiVisibility(uiFlags); });
+            }
+        } catch(Exception ignored) {}
     }
 
     private void applyThemeByTime() {
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int bg = (hour >= 22 || hour < 6) ? 0xFF050510 : (hour < 12) ? 0xFF0A0A1A : (hour < 18) ? 0xFF120A1A : 0xFF0A0F1A;
-        findViewById(android.R.id.content).getRootView().setBackgroundColor(bg);
+        try {
+            int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            int bg = (hour >= 22 || hour < 6) ? 0xFF050510 : (hour < 12) ? 0xFF0A0A1A : (hour < 18) ? 0xFF120A1A : 0xFF0A0F1A;
+            View root = findViewById(android.R.id.content).getRootView();
+            if(root != null) root.setBackgroundColor(bg);
+        } catch(Exception ignored) {}
     }
 
     private void registerBatteryReceiver() {
@@ -190,8 +200,8 @@ public class MainActivity extends Activity {
             long total = memInfo.totalMem, avail = memInfo.availMem;
             ramPct = (int) ((total - avail) * 100 / total);
             cpuPct = readCpuUsage();
-            runOnUiThread(new Runnable() { @Override public void run() { updateStatusUI(); } });
-        } catch(Exception e) {}
+            runOnUiThread(this::updateStatusUI);
+        } catch(Exception ignored) {}
     }
 
     private int readCpuUsage() {
@@ -209,76 +219,52 @@ public class MainActivity extends Activity {
     private void showQuickControls() {
         new AlertDialog.Builder(this).setTitle("⚙️ Controlli Rapidi")
             .setItems(new String[]{"☀️ Luminosità", "🔊 Volume", "📶 WiFi", "🔵 Bluetooth", "🎨 Tema"},
-            new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) {
-                    switch(w) {
-                        case 0: adjustBrightness(); break;
-                        case 1: adjustVolume(); break;
-                        case 2: toggleWifi(); break;
-                        case 3: toggleBluetooth(); break;
-                        case 4: showThemeSelector(); break;
-                    }
+            (d, w) -> { try {
+                switch(w) {
+                    case 0: adjustBrightness(); break;
+                    case 1: adjustVolume(); break;
+                    case 2: toggleWifi(); break;
+                    case 3: toggleBluetooth(); break;
+                    case 4: showThemeSelector(); break;
                 }
-            }).setNegativeButton("Chiudi", null).show();
+            } catch(Exception e) { showAlert("Errore", "Funzione non disponibile su questo dispositivo."); }})
+            .setNegativeButton("Chiudi", null).show();
     }
 
-    // ✅ FIX: Usa final EditText invece di findViewById su DialogInterface
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
-        final EditText input = new EditText(this);
-        input.setHint("0-255");
-        input.setBackgroundColor(Color.parseColor("#1A1A1A"));
-        input.setTextColor(Color.parseColor("#FFFFFF"));
-        new AlertDialog.Builder(this).setTitle("Luminosità")
-            .setView(input)
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) {
-                    try {
-                        int val = Integer.parseInt(input.getText().toString());
-                        val = Math.max(0, Math.min(255, val));
-                        lp.screenBrightness = val / 255f;
-                        getWindow().setAttributes(lp);
-                    } catch(Exception e) {}
-                }
-            }).setNegativeButton("Auto", new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) { lp.screenBrightness = -1; getWindow().setAttributes(lp); }
-            }).show();
+        final EditText input = new EditText(this); input.setHint("0-255"); input.setBackgroundColor(Color.parseColor("#1A1A1A")); input.setTextColor(Color.WHITE);
+        new AlertDialog.Builder(this).setTitle("Luminosità").setView(input)
+            .setPositiveButton("OK", (d, w) -> { try { lp.screenBrightness = Math.max(0, Math.min(255, Integer.parseInt(input.getText().toString()))) / 255f; getWindow().setAttributes(lp); } catch(Exception e) {} })
+            .setNegativeButton("Auto", (d, w) -> { lp.screenBrightness = -1; getWindow().setAttributes(lp); }).show();
     }
 
     private void adjustVolume() {
-        final EditText input = new EditText(this);
-        input.setHint("0-15");
-        input.setBackgroundColor(Color.parseColor("#1A1A1A"));
-        input.setTextColor(Color.parseColor("#FFFFFF"));
+        final EditText input = new EditText(this); input.setHint("0-15"); input.setBackgroundColor(Color.parseColor("#1A1A1A")); input.setTextColor(Color.WHITE);
         final AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        new AlertDialog.Builder(this).setTitle("Volume")
-            .setView(input)
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) {
-                    try { int v = Integer.parseInt(input.getText().toString()); am.setStreamVolume(AudioManager.STREAM_MUSIC, v, 0); } catch(Exception e) {}
-                }
-            }).show();
+        new AlertDialog.Builder(this).setTitle("Volume").setView(input)
+            .setPositiveButton("OK", (d, w) -> { try { am.setStreamVolume(AudioManager.STREAM_MUSIC, Integer.parseInt(input.getText().toString()), 0); } catch(Exception e) {} }).show();
     }
 
     private void toggleWifi() {
-        WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on);
-        showAlert("WiFi", "Stato: " + (!on ? "Attivato" : "Disattivato"));
+        try {
+            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); }
+        } catch(Exception e) { showAlert("WiFi", "Impossibile modificare. Controlla permessi."); }
     }
 
     private void toggleBluetooth() {
-        BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter();
-        if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); }
+        try {
+            BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter();
+            if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); }
+        } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare. Controlla permessi."); }
     }
 
     private void showThemeSelector() {
         final String[] themes = {"🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
-        final String[] keys = {"classic", "night", "minimal"};
-        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, new DialogInterface.OnClickListener() {
-            @Override public void onClick(DialogInterface d, int w) {
-                prefs.edit().putString("theme", keys[w]).commit();
-                applyTheme(); showAlert("Tema", "Applicato: " + themes[w]);
-            }
+        final String[] keys = {"classic", "night", "ocean"};
+        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, (d, w) -> {
+            prefs.edit().putString("theme", keys[w]).commit(); applyTheme(); showAlert("Tema", "Applicato: " + themes[w]);
         }).show();
     }
 
@@ -288,46 +274,34 @@ public class MainActivity extends Activity {
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
             intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota...");
             startActivityForResult(intent, VOICE_REQ);
-        } catch(Exception e) {
-            showAlert("Voice", "Servizio vocale non disponibile. Usa tastiera.");
-        }
+        } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile. Usa tastiera."); }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == VOICE_REQ && resultCode == RESULT_OK && data != null) {
-            List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if(results != null && results.size() > 0) {
-                String text = results.get(0);
-                todos.add(0, new TodoItem(text, false));
-                saveData();
-                runOnUiThread(new Runnable() { @Override public void run() { if(todoAdapter != null) todoAdapter.notifyDataSetChanged(); }});
-                animateView(todoList);
-            }
+            try {
+                List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                if(results != null && results.size() > 0) {
+                    todos.add(0, new TodoItem(results.get(0), false)); saveData();
+                    runOnUiThread(() -> { if(todoAdapter != null) todoAdapter.notifyDataSetChanged(); });
+                }
+            } catch(Exception ignored) {}
         }
-    }
-
-    private void animateView(View v) {
-        AlphaAnimation aa = new AlphaAnimation(0f, 1f);
-        aa.setDuration(300); v.startAnimation(aa);
-        TranslateAnimation ta = new TranslateAnimation(0, 0, 20, 0);
-        ta.setDuration(300); v.startAnimation(ta);
     }
 
     private void showSettingsMenu() {
         new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset Prefs"},
-            new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) {
-                    switch(w) {
-                        case 0: openBatteryOpt(); break; case 1: toggleRotation(); break;
-                        case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break;
-                        case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break;
-                        case 4: new AlertDialog.Builder(MainActivity.this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break;
-                        case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite. Riavvia app."); break;
-                    }
+            (d, w) -> { try {
+                switch(w) {
+                    case 0: openBatteryOpt(); break; case 1: toggleRotation(); break;
+                    case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break;
+                    case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break;
+                    case 4: new AlertDialog.Builder(this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break;
+                    case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite. Riavvia app."); break;
                 }
-            }).setNegativeButton("Chiudi",null).show();
+            } catch(Exception e) { e.printStackTrace(); }})
+            .setNegativeButton("Chiudi",null).show();
     }
     private void openBatteryOpt() { try { startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).setData(Uri.parse("package:"+getPackageName()))); } catch(Exception e) { showAlert("Batteria","Disabilita ottimizzazione"); } }
     private void toggleRotation() { try { if(getRequestedOrientation()==ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR); showAlert("Rotazione","Automatica"); } else { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); showAlert("Rotazione","Orizzontale"); } } catch(Exception e) {} }
@@ -348,11 +322,11 @@ public class MainActivity extends Activity {
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#1A1A1A"));
             Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(18); cBtn.setWidth(45); cBtn.setHeight(45); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
-            cBtn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { runOnUiThread(new Runnable() { @Override public void run() { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); }}); }});
+            cBtn.setOnClickListener(v -> runOnUiThread(() -> { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text); tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(14); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(10,0,10,0);
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(18); dBtn.setWidth(45); dBtn.setHeight(45); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.parseColor("#FFFFFF")); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos;
-            dBtn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ @Override public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ @Override public void run(){ todos.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); }}); }}).setNegativeButton("No",null).show(); }});
+            dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ todos.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
         }
     }
@@ -361,25 +335,25 @@ public class MainActivity extends Activity {
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#222222"));
             Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(16); cBtn.setWidth(40); cBtn.setHeight(40); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
-            cBtn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { runOnUiThread(new Runnable() { @Override public void run() { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); }}); }});
+            cBtn.setOnClickListener(v -> runOnUiThread(() -> { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display()); tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(12); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(8,0,8,0);
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(16); dBtn.setWidth(40); dBtn.setHeight(40); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.parseColor("#FFFFFF")); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos; final String finalDate = selectedDate;
-            dBtn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ @Override public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ @Override public void run(){ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } }}); }}).setNegativeButton("No",null).show(); }});
+            dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
         }
     }
     private void showAddTodoDialog() {
-        EditText input = new EditText(this); input.setHint("Scrivi nota..."); input.setBackgroundColor(Color.parseColor("#1A1A1A")); input.setTextColor(Color.parseColor("#FFFFFF"));
-        new AlertDialog.Builder(this).setTitle("Nuova Nota").setView(input).setPositiveButton("OK",new DialogInterface.OnClickListener(){ @Override public void onClick(DialogInterface d, int w){ String val=input.getText().toString().trim(); if(!val.isEmpty()) { todos.add(0,new TodoItem(val,false)); saveData(); runOnUiThread(new Runnable(){ @Override public void run(){ todoAdapter.notifyDataSetChanged(); }}); } }}).setNegativeButton("Annulla",null).show();
+        EditText input = new EditText(this); input.setHint("Scrivi nota..."); input.setBackgroundColor(Color.parseColor("#1A1A1A")); input.setTextColor(Color.WHITE);
+        new AlertDialog.Builder(this).setTitle("Nuova Nota").setView(input).setPositiveButton("OK",(d,w)->{ String val=input.getText().toString().trim(); if(!val.isEmpty()) { todos.add(0,new TodoItem(val,false)); saveData(); runOnUiThread(()->todoAdapter.notifyDataSetChanged()); } }).setNegativeButton("Annulla",null).show();
     }
     private void showAddEventDialog(final String date) {
         final EditText dIn = new EditText(this); final EditText tIn = new EditText(this); final EditText descIn = new EditText(this);
         dIn.setHint("Data (YYYY-MM-DD)"); tIn.setHint("Ora"); descIn.setHint("Descrizione");
         dIn.setText(date!=null?date:new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
-        for(EditText e:new EditText[]{dIn,tIn,descIn}) { e.setBackgroundColor(Color.parseColor("#1A1A1A")); e.setTextColor(Color.parseColor("#FFFFFF")); }
+        for(EditText e:new EditText[]{dIn,tIn,descIn}) { e.setBackgroundColor(Color.parseColor("#1A1A1A")); e.setTextColor(Color.WHITE); }
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(20,10,20,10); layout.addView(dIn); layout.addView(tIn); layout.addView(descIn);
-        new AlertDialog.Builder(this).setTitle("Appuntamento").setView(layout).setPositiveButton("Salva",new DialogInterface.OnClickListener(){ @Override public void onClick(DialogInterface d, int w){ String dt=dIn.getText().toString().trim(), tm=tIn.getText().toString().trim(), desc=descIn.getText().toString().trim(); if(!dt.isEmpty() && !desc.isEmpty()) { if(!eventsByDate.containsKey(dt)) eventsByDate.put(dt,new ArrayList<EventItem>()); eventsByDate.get(dt).add(new EventItem(tm,desc,false)); saveData(); runOnUiThread(new Runnable(){ @Override public void run(){ if(calendarAdapter!=null) calendarAdapter.notifyDataSetChanged(); if(dt.equals(selectedDate)) updateDayEventsDisplay(); }}); } }}).setNegativeButton("Annulla",null).show();
+        new AlertDialog.Builder(this).setTitle("Appuntamento").setView(layout).setPositiveButton("Salva",(d,w)->{ String dt=dIn.getText().toString().trim(), tm=tIn.getText().toString().trim(), desc=descIn.getText().toString().trim(); if(!dt.isEmpty() && !desc.isEmpty()) { if(!eventsByDate.containsKey(dt)) eventsByDate.put(dt,new ArrayList<EventItem>()); eventsByDate.get(dt).add(new EventItem(tm,desc,false)); saveData(); runOnUiThread(()->{ if(calendarAdapter!=null) calendarAdapter.notifyDataSetChanged(); if(dt.equals(selectedDate)) updateDayEventsDisplay(); }); } }).setNegativeButton("Annulla",null).show();
     }
     private void updateDayEventsDisplay() {
         if(selectedDate!=null && eventsByDate.containsKey(selectedDate) && !eventsByDate.get(selectedDate).isEmpty()) {
@@ -392,7 +366,7 @@ public class MainActivity extends Activity {
     private void updateCalendarDisplay() {
         String[] months={"Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"};
         if(calendarMonth!=null) calendarMonth.setText(months[currentCal.get(Calendar.MONTH)]+" "+currentCal.get(Calendar.YEAR));
-        if(calendarAdapter!=null) runOnUiThread(new Runnable(){ @Override public void run(){ calendarAdapter.notifyDataSetChanged(); }});
+        if(calendarAdapter!=null) runOnUiThread(calendarAdapter::notifyDataSetChanged);
     }
     private class CalendarAdapter extends BaseAdapter {
         @Override public int getCount() { return 42; } @Override public Object getItem(int p) { return null; } @Override public long getItemId(int p) { return 0; }
@@ -410,13 +384,13 @@ public class MainActivity extends Activity {
                 TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(10); dot.setTextColor(Color.parseColor("#D4AF37"));
                 if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#050505")); cell.setEnabled(false); }
                 else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
-                cell.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }});
+                cell.setOnClickListener(v -> { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } });
                 cell.addView(tv); cell.addView(dot);
             } catch(Exception e) { e.printStackTrace(); }
             return cell;
         }
     }
-    private void startClock() { clockHandler.postDelayed(new Runnable(){ @Override public void run(){ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this,1000); } catch(Exception ignored) {} }},1000); }
+    private void startClock() { clockHandler.postDelayed(()->{ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this::startClock,1000); } catch(Exception ignored) {} },1000); }
     private void loadWeather() {
         new AsyncTask<Void,Void,String>() { @Override protected String doInBackground(Void... p) { try { HttpURLConnection c=(HttpURLConnection)new URL("http://wttr.in/Foggia,Italy?format=j1&lang=it").openConnection(); c.setRequestMethod("GET"); c.setConnectTimeout(5000); BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream())); StringBuilder s=new StringBuilder(); String l; while((l=r.readLine())!=null) s.append(l); r.close(); return s.toString(); } catch(Exception e) { return "ERRORE"; }}
         @Override protected void onPostExecute(String res) {
@@ -435,9 +409,9 @@ public class MainActivity extends Activity {
                         r.addView(td); r.addView(td2); r.addView(ti); r.addView(tt); forecastContainer.addView(r); } } } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); } }
         }.execute();
     }
-    private void startWeatherRefresh() { weatherHandler.postDelayed(new Runnable(){ @Override public void run(){ loadWeather(); weatherHandler.postDelayed(this,1800000); }},1800000); }
+    private void startWeatherRefresh() { weatherHandler.postDelayed(()->{ loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh,1800000); },1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
-    @Override protected void onResume() { super.onResume(); setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); }
-    @Override protected void onPause() { super.onPause(); if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); statsHandler.removeCallbacksAndMessages(null); }
+    @Override protected void onResume() { super.onResume(); try { setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); } catch(Exception ignored) {} }
+    @Override protected void onPause() { super.onPause(); try { if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); statsHandler.removeCallbacksAndMessages(null); } catch(Exception ignored) {} }
     @Override protected void onDestroy() { super.onDestroy(); try { unregisterReceiver(batteryReceiver); } catch(Exception ignored) {} }
 }
