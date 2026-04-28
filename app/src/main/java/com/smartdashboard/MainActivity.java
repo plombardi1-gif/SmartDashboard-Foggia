@@ -45,7 +45,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
@@ -169,7 +168,6 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
-    // ✅ FEATURE 4: Auto-Tema Solare per Foggia (41.46°N, 15.54°E)
     private void applyThemeByTime() {
         try {
             long[] sunTimes = getSunTimesFoggia();
@@ -189,11 +187,9 @@ public class MainActivity extends Activity {
             double M = (357.529 + 0.98560028*n) % 360.0;
             double C = 1.9148*Math.sin(M*Math.PI/180) + 0.01999*Math.sin(2*M*Math.PI/180) + 0.00029*Math.sin(3*M*Math.PI/180);
             double lambda = (M + 102.9372 + C) % 360.0;
-            double L0 = lambda;
-            double T = (n + (cal.get(Calendar.HOUR_OF_DAY)*3600+cal.get(Calendar.MINUTE)*60+cal.get(Calendar.SECOND))/86400.0) / 36525.0;
-            double omega = 125.04 - 1934.136*T;
-            double lon = L0 + 0.00569 + 0.00478*Math.sin(omega*Math.PI/180);
-            double e = 23.4393 - 0.0130042*T;
+            double omega = 125.04 - 1934.136*((n+36525*cal.get(Calendar.YEAR))/36525.0);
+            double lon = lambda + 0.00569 + 0.00478*Math.sin(omega*Math.PI/180);
+            double e = 23.4393 - 0.0130042*((n+36525*cal.get(Calendar.YEAR))/36525.0);
             double decl = Math.asin(Math.sin(e*Math.PI/180)*Math.sin(lon*Math.PI/180))*180.0/Math.PI;
             double lat = 41.46;
             double cosH = (Math.sin(-0.833*Math.PI/180) - Math.sin(lat*Math.PI/180)*Math.sin(decl*Math.PI/180)) / (Math.cos(lat*Math.PI/180)*Math.cos(decl*Math.PI/180));
@@ -254,17 +250,25 @@ public class MainActivity extends Activity {
     private void showQuickControls() {
         new AlertDialog.Builder(this).setTitle("⚙️ Controlli Rapidi")
             .setItems(new String[]{"☀️ Luminosità", "🔊 Volume", "📶 WiFi", "🔵 Bluetooth", "🎨 Tema"},
-            new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface d, int w) { try {
-                    switch(w) { case 0: adjustBrightness(); break; case 1: adjustVolume(); break; case 2: toggleWifi(); break; case 3: toggleBluetooth(); break; case 4: showThemeSelector(); break; }
-                } catch(Exception e) { showAlert("Errore", "Funzione non disponibile."); }}})
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int w) {
+                        try {
+                            switch(w) {
+                                case 0: adjustBrightness(); break;
+                                case 1: adjustVolume(); break;
+                                case 2: toggleWifi(); break;
+                                case 3: toggleBluetooth(); break;
+                                case 4: showThemeSelector(); break;
+                            }
+                        } catch(Exception e) { showAlert("Errore", "Funzione non disponibile."); }
+                    }
+                })
             .setNegativeButton("Chiudi", null).show();
     }
 
-    // ✅ FEATURE 3: Slider Luminosità & Volume
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
-        final SeekBar bar = new SeekBar(this); bar.setMax(255); bar.setProgress((int)(lp.screenBrightness * 255)); bar.setProgressTintList(null);
+        final SeekBar bar = new SeekBar(this); bar.setMax(255); bar.setProgress((int)(lp.screenBrightness * 255));
         new AlertDialog.Builder(this).setTitle("Luminosità").setView(bar)
             .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { try { lp.screenBrightness = bar.getProgress() / 255f; getWindow().setAttributes(lp); } catch(Exception e) {} } })
             .setNegativeButton("Auto", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { lp.screenBrightness = -1; getWindow().setAttributes(lp); } }).show();
@@ -287,7 +291,6 @@ public class MainActivity extends Activity {
 
     private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
     
-    // ✅ FEATURE 1: Scatto Veloce
     private void takePhoto() {
         try {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -308,13 +311,25 @@ public class MainActivity extends Activity {
     }
 
     private void showSettingsMenu() {
-        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset"},
-            new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface d, int w) { try {
-                    switch(w) { case 0: openBatteryOpt(); break; case 1: toggleRotation(); break; case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break; case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break; case 4: new AlertDialog.Builder(MainActivity.this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break; case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite."); break; }
-                } catch(Exception e) { e.printStackTrace(); }})
-            .setNegativeButton("Chiudi",null).show();
+        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni")
+            .setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset"},
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface d, int w) {
+                        try {
+                            switch(w) {
+                                case 0: openBatteryOpt(); break;
+                                case 1: toggleRotation(); break;
+                                case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break;
+                                case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break;
+                                case 4: new AlertDialog.Builder(MainActivity.this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break;
+                                case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite."); break;
+                            }
+                        } catch(Exception e) { e.printStackTrace(); }
+                    }
+                })
+            .setNegativeButton("Chiudi", null).show();
     }
+
     private void openBatteryOpt() { try { startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).setData(Uri.parse("package:"+getPackageName()))); } catch(Exception e) { showAlert("Batteria","Disabilita ottimizzazione"); } }
     private void toggleRotation() { try { if(getRequestedOrientation()==ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR); showAlert("Rotazione","Automatica"); } else { setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); showAlert("Rotazione","Orizzontale"); } } catch(Exception e) {} }
 
