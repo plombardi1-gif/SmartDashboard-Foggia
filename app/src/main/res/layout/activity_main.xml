@@ -15,7 +15,7 @@
         android:orientation="horizontal"
         android:weightSum="10">
 
-        <!-- Orologio Elegante -->
+        <!-- Orologio con Smart Pietro Home -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -31,9 +31,14 @@
             <TextView android:id="@+id/date"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:textSize="14dp" android:textColor="#D4AF37" android:letterSpacing="0.1" android:textStyle="bold"/>
+            <TextView android:id="@+id/smartHomeText"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Smart Pietro Home"
+                android:textSize="12dp" android:textColor="#888888" 
+                android:layout_marginTop="4dp" android:letterSpacing="0.2"/>
         </LinearLayout>
 
-        <!-- Meteo Elegante -->
+        <!-- Meteo -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
@@ -45,7 +50,7 @@
             
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
                 <TextView android:id="@+id/weatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="☀️" android:textSize="36dp"/>
+                    android:text="☀" android:textSize="36dp"/>
                 <LinearLayout android:orientation="vertical" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginLeft="12dp">
                     <TextView android:id="@+id/weatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="26°C" android:textSize="26dp" android:textStyle="bold" android:textColor="#FFFFFF"/>
@@ -83,7 +88,7 @@
             
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="6dp">
                 <Button android:id="@+id/btnPrevMonth" android:text="◀" android:layout_width="32dp" android:layout_height="32dp" android:textSize="14dp" android:background="#1A1A1A" android:textColor="#D4AF37"/>
-                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Aprile 2026" android:textSize="16dp" android:textStyle="bold" android:textColor="#D4AF37" android:gravity="center" android:letterSpacing="0.05"/>
+                <TextView android:id="@+id/calendarMonth" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Maggio 2026" android:textSize="16dp" android:textStyle="bold" android:textColor="#D4AF37" android:gravity="center" android:letterSpacing="0.05"/>
                 <Button android:id="@+id/btnNextMonth" android:text="▶" android:layout_width="32dp" android:layout_height="32dp" android:textSize="14dp" android:background="#1A1A1A" android:textColor="#D4AF37"/>
             </LinearLayout>
             

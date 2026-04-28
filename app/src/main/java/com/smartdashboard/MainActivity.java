@@ -2,17 +2,26 @@ package com.smartdashboard;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -35,7 +44,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private TextView clockText, dateText, weatherIcon, weatherTemp, weatherDesc, weatherWind;
+    private TextView clockText, dateText, smartHomeText, weatherIcon, weatherTemp, weatherDesc, weatherWind;
     private TextView calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
@@ -51,6 +60,7 @@ public class MainActivity extends Activity {
     private Calendar currentCal;
     private CalendarAdapter calendarAdapter;
     private String selectedDate = null;
+    private PowerManager.WakeLock wakeLock;
 
     static class TodoItem {
         String text;
@@ -68,11 +78,29 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // SCHERMO INTERO COMPLETO (Android 4.0+)
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+                            WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        
+        // Wake Lock per mantenere schermo acceso
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "DashboardPietro:WakeLock");
+        
         setContentView(R.layout.activity_main);
+
+        // Blocca rotazione su landscape
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         try {
             clockText = (TextView) findViewById(R.id.clock);
             dateText = (TextView) findViewById(R.id.date);
+            smartHomeText = (TextView) findViewById(R.id.smartHomeText);
             weatherIcon = (TextView) findViewById(R.id.weatherIcon);
             weatherTemp = (TextView) findViewById(R.id.weatherTemp);
             weatherDesc = (TextView) findViewById(R.id.weatherDesc);
@@ -124,9 +152,101 @@ public class MainActivity extends Activity {
                     updateCalendarDisplay(); 
                 }
             });
+            
+            // Menu impostazioni con tocco prolungato sull'orologio
+            if(clockText != null) {
+                clockText.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        showSettingsMenu();
+                        return true;
+                    }
+                });
+            }
+            
         } catch(Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    private void showSettingsMenu() {
+        new AlertDialog.Builder(this)
+            .setTitle("⚙️ Impostazioni Dashboard")
+            .setItems(new String[]{
+                "🔋 Ottimizzazione Batteria",
+                "🔄 Rotazione Schermo",
+                "⏱️ Timeout Schermo",
+                "🔒 Blocco Schermo",
+                "📱 Modalità Launcher"
+            }, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch(which) {
+                        case 0: openBatteryOptimization(); break;
+                        case 1: toggleRotation(); break;
+                        case 2: openScreenTimeout(); break;
+                        case 3: openLockScreenSettings(); break;
+                        case 4: showLauncherInfo(); break;
+                    }
+                }
+            })
+            .setNegativeButton("Chiudi", null)
+            .show();
+    }
+    
+    private void openBatteryOptimization() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } catch(Exception e) {
+            showAlert("Batteria", "Vai su Impostazioni > Batteria > Ottimizzazione e seleziona 'Non ottimizzare' per Dashboard Pietro");
+        }
+    }
+    
+    private void toggleRotation() {
+        try {
+            int current = getRequestedOrientation();
+            if(current == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                showAlert("Rotazione", "Rotazione automatica attivata (sensore)");
+            } else {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                showAlert("Rotazione", "Rotazione bloccata su Orizzontale");
+            }
+        } catch(Exception e) {
+            showAlert("Errore", "Impossibile modificare la rotazione");
+        }
+    }
+    
+    private void openScreenTimeout() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_DISPLAY_SETTINGS);
+            startActivity(intent);
+        } catch(Exception e) {
+            showAlert("Timeout", "Vai su Impostazioni > Schermo > Timeout e imposta il tempo desiderato");
+        }
+    }
+    
+    private void openLockScreenSettings() {
+        try {
+            Intent intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+            startActivity(intent);
+        } catch(Exception e) {
+            showAlert("Blocco", "Vai su Impostazioni > Sicurezza > Blocco schermo");
+        }
+    }
+    
+    private void showLauncherInfo() {
+        new AlertDialog.Builder(this)
+            .setTitle("Modalità Launcher")
+            .setMessage("Per usare Dashboard Pietro come launcher principale:\n\n" +
+                       "1. Premi il tasto HOME del tablet\n" +
+                       "2. Seleziona 'Dashboard Pietro'\n" +
+                       "3. Scegli 'Sempre'\n\n" +
+                       "Per uscire: Premi HOME due volte o usa le impostazioni di sistema.")
+            .setPositiveButton("OK", null)
+            .show();
     }
 
     private void loadData() {
@@ -207,7 +327,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter NOTE - Pulsante X invece di emoji
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos == null ? 0 : todos.size(); }
         @Override public Object getItem(int pos) { return todos.get(pos); }
@@ -249,7 +368,6 @@ public class MainActivity extends Activity {
                 tv.setGravity(Gravity.CENTER_VERTICAL);
                 tv.setPadding(10,0,10,0);
                 
-                // Pulsante X elegante invece di 🗑️
                 Button btnDel = new Button(MainActivity.this);
                 btnDel.setText("✕");
                 btnDel.setTextSize(18);
@@ -293,7 +411,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Adapter EVENTI - Pulsante X invece di emoji
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents == null ? 0 : dayEvents.size(); }
         @Override public Object getItem(int pos) { return dayEvents.get(pos); }
@@ -337,7 +454,6 @@ public class MainActivity extends Activity {
                 tv.setGravity(Gravity.CENTER_VERTICAL);
                 tv.setPadding(8,0,8,0);
                 
-                // Pulsante X elegante
                 Button btnDel = new Button(MainActivity.this);
                 btnDel.setText("✕");
                 btnDel.setTextSize(16);
@@ -644,23 +760,21 @@ public class MainActivity extends Activity {
                     if(weatherDesc != null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value"));
                     if(weatherWind != null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
                     
-                    // Previsioni 7 giorni - Layout migliorato
+                    // Previsioni 3 giorni (limite API gratuita)
                     if(forecastContainer != null) {
                         forecastContainer.removeAllViews();
                         
-                        // Titolo
                         TextView title = new TextView(MainActivity.this);
-                        title.setText("Previsioni 7 giorni");
+                        title.setText("Previsioni 3 giorni");
                         title.setTextColor(Color.parseColor("#D4AF37"));
                         title.setTextSize(10);
                         title.setTypeface(null, Typeface.BOLD);
                         title.setPadding(0,0,0,4);
                         forecastContainer.addView(title);
                         
-                        // Griglia previsioni
                         String[] dayNames = {"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                         
-                        for (int i = 0; i < Math.min(7, weather.length()); i++) {
+                        for (int i = 0; i < Math.min(3, weather.length()); i++) {
                             JSONObject d = weather.getJSONObject(i);
                             String dateStr = d.getString("date");
                             Calendar c = Calendar.getInstance();
@@ -668,14 +782,12 @@ public class MainActivity extends Activity {
                             String dayName = dayNames[c.get(Calendar.DAY_OF_WEEK)-2];
                             if(dayName == null) dayName = "Dom";
                             
-                            // Cella previsione
                             LinearLayout row = new LinearLayout(MainActivity.this);
                             row.setOrientation(LinearLayout.HORIZONTAL);
                             row.setPadding(4,2,4,2);
                             row.setGravity(Gravity.CENTER_VERTICAL);
                             row.setBackgroundColor(i % 2 == 0 ? Color.parseColor("#1A1A1A") : Color.parseColor("#222222"));
                             
-                            // Giorno
                             TextView tvDay = new TextView(MainActivity.this);
                             tvDay.setText(dayName);
                             tvDay.setTextColor(Color.parseColor("#D4AF37"));
@@ -683,14 +795,12 @@ public class MainActivity extends Activity {
                             tvDay.setWidth(32);
                             tvDay.setGravity(Gravity.CENTER);
                             
-                            // Data
                             TextView tvDate = new TextView(MainActivity.this);
                             tvDate.setText(dateStr.substring(8));
                             tvDate.setTextColor(Color.parseColor("#888888"));
                             tvDate.setTextSize(9);
                             tvDate.setWidth(20);
                             
-                            // Icona meteo
                             String wDesc = d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
                             String wIcon = "☀";
                             if(wDesc.contains("nuvol") || wDesc.contains("cloud")) wIcon = "☁";
@@ -703,7 +813,6 @@ public class MainActivity extends Activity {
                             tvIcon.setWidth(24);
                             tvIcon.setGravity(Gravity.CENTER);
                             
-                            // Temperatura
                             TextView tvTemp = new TextView(MainActivity.this);
                             tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°");
                             tvTemp.setTextColor(Color.parseColor("#FFFFFF"));
@@ -743,5 +852,31 @@ public class MainActivity extends Activity {
                 .setPositiveButton("OK", null)
                 .show();
         } catch(Exception e) { e.printStackTrace(); }
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Nascondi barra di navigazione al resume
+        hideNavigationBar();
+        if(wakeLock != null && !wakeLock.isHeld()) {
+            wakeLock.acquire(10*60*1000L /*10 minuti*/);
+        }
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+    }
+    
+    private void hideNavigationBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            View decorView = getWindow().getDecorView();
+            int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            decorView.setSystemUiVisibility(uiOptions);
+        }
     }
 }
