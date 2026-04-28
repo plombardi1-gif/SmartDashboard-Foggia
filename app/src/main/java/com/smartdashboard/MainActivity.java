@@ -67,6 +67,10 @@ public class MainActivity extends Activity {
     private PowerManager.WakeLock wakeLock;
     private BroadcastReceiver batteryReceiver;
 
+    // Variabili per stats globali
+    private int batteryPct = 100, ramPct = 0, cpuPct = 0;
+    private boolean isCharging = false;
+
     static class TodoItem { String text; boolean done; TodoItem(String t, boolean d) { text=t; done=d; } }
     static class EventItem { String time, desc; boolean done; EventItem(String t, String d, boolean done) { time=t; desc=d; this.done=done; } String display() { return (time.isEmpty()?"":time+" - ")+desc; } }
 
@@ -123,25 +127,29 @@ public class MainActivity extends Activity {
 
     private void setupFullScreen() {
         View decor = getWindow().getDecorView();
-        int uiFlags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        int uiFlags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
         decor.setSystemUiVisibility(uiFlags);
         decor.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override public void onSystemUiVisibilityChange(int visibility) { if (visibility == 0) decor.setSystemUiVisibility(uiFlags); }
+            @Override public void onSystemUiVisibilityChange(int visibility) {
+                if (visibility == 0) decor.setSystemUiVisibility(uiFlags);
+            }
+        });
+        View root = findViewById(android.R.id.content).getRootView();
+        root.setSystemUiVisibility(uiFlags);
+        root.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+            @Override public void onSystemUiVisibilityChange(int visibility) {
+                if (visibility == 0) root.setSystemUiVisibility(uiFlags);
+            }
         });
     }
 
     private void applyThemeByTime() {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int bgColor = 0;
-        if (hour >= 22 || hour < 6) bgColor = Color.parseColor("#050510");
-        else if (hour >= 6 && hour < 12) bgColor = Color.parseColor("#0a0a1a");
-        else if (hour >= 12 && hour < 18) bgColor = Color.parseColor("#120a1a");
-        else bgColor = Color.parseColor("#0a0f1a");
+        int bgColor = (hour >= 22 || hour < 6) ? 0xFF050510 : (hour < 12) ? 0xFF0A0A1A : (hour < 18) ? 0xFF120A1A : 0xFF0A0F1A;
         findViewById(android.R.id.content).getRootView().setBackgroundColor(bgColor);
     }
 
     private void registerBatteryReceiver() {
-        // ✅ CORRETTO: BroadcastReceiver non supporta le lambda, usa classe anonima
         batteryReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -149,13 +157,21 @@ public class MainActivity extends Activity {
                     int level = intent.getIntExtra("level", -1);
                     int scale = intent.getIntExtra("scale", 100);
                     int plugged = intent.getIntExtra("plugged", -1);
-                    if(level != -1 && scale != -1 && batteryText != null) {
-                        batteryText.setText((plugged==2||plugged==1?"⚡":"") + " " + (level*100)/scale + "%");
+                    if(level != -1 && scale != -1) {
+                        batteryPct = (level * 100) / scale;
+                        isCharging = (plugged == 2 || plugged == 1);
+                        updateStatusUI();
                     }
                 } catch(Exception ignored) {}
             }
         };
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+    }
+
+    private void updateStatusUI() {
+        if(batteryText != null) {
+            batteryText.setText((isCharging?"⚡":"") + " " + batteryPct + "% | 📊 RAM:" + ramPct + "% ⚡ CPU:" + cpuPct + "%");
+        }
     }
 
     private void startStatsUpdater() {
@@ -174,15 +190,10 @@ public class MainActivity extends Activity {
             ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
             am.getMemoryInfo(memInfo);
             long total = memInfo.totalMem, avail = memInfo.availMem;
-            int ramPct = (int) ((total - avail) * 100 / total);
-            int cpuPct = readCpuUsage();
+            ramPct = (int) ((total - avail) * 100 / total);
+            cpuPct = readCpuUsage();
             runOnUiThread(new Runnable() {
-                @Override public void run() {
-                    if(batteryText != null) {
-                        String base = batteryText.getText().toString();
-                        batteryText.setText(base + " | 📊RAM:" + ramPct + "% ⚡CPU:" + cpuPct + "%");
-                    }
-                }
+                @Override public void run() { updateStatusUI(); }
             });
         } catch(Exception e) {}
     }
