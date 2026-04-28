@@ -60,7 +60,8 @@ public class MainActivity extends Activity {
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
     private LinearLayout dayEventsPanel, forecastContainer, hourlyContainer, rootLayout;
-    private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnQuickControls, btnVoice;
+    // ✅ RIMOSSI: btnCamera, btnQuickControls
+    private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnVoice;
     private Handler clockHandler, weatherHandler, statsHandler;
     private SharedPreferences prefs;
     private ArrayList<TodoItem> todos;
@@ -104,7 +105,8 @@ public class MainActivity extends Activity {
             hourlyContainer = (LinearLayout) findViewById(R.id.hourlyContainer);
             selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
             btnAddEvt = (Button) findViewById(R.id.btnAddEvt); btnAddTodo = (Button) findViewById(R.id.btnAddTodo); btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
-            btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather); btnQuickControls = (Button) findViewById(R.id.btnQuickControls);
+            btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather);
+            // ✅ RIMOSSI findViewById per btnCamera e btnQuickControls
             btnVoice = (Button) findViewById(R.id.btnVoice);
 
             prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
@@ -124,7 +126,8 @@ public class MainActivity extends Activity {
             if(btnPrevMonth != null) btnPrevMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); } });
             if(btnNextMonth != null) btnNextMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); } });
             if(btnRefreshWeather != null) btnRefreshWeather.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { loadWeather(); } });
-            if(btnQuickControls != null) btnQuickControls.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { showQuickControls(); } });
+            // ✅ RIMOSSI setOnClickListener per btnCamera e btnQuickControls
+            
             if(clockText != null) clockText.setOnLongClickListener(new View.OnLongClickListener() { public boolean onLongClick(View v) { showSettingsMenu(); return true; } });
 
             setupFullScreen();
@@ -431,7 +434,6 @@ public class MainActivity extends Activity {
                 if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code)); 
                 if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); 
                 
-                // Min/Max e Pioggia massima oggi
                 String minMax = "";
                 int maxRain = 0;
                 try {
@@ -445,7 +447,6 @@ public class MainActivity extends Activity {
                 } catch(Exception ignored) {}
                 if(weatherMinMax!=null) weatherMinMax.setText(minMax);
                 
-                // Dettagli: Vento, Umidità, Pioggia
                 String details = "";
                 try {
                     String wind = cur.optString("windspeedKmph", "?") + " km/h " + cur.optString("winddir16Point", "");
@@ -454,7 +455,6 @@ public class MainActivity extends Activity {
                 } catch(Exception ignored) {}
                 if(weatherDetails!=null) weatherDetails.setText(details);
 
-                // ✅ ORARI OGGI (ogni 3 ore: 0,3,6,9,12,15,18,21)
                 if(hourlyContainer!=null) { hourlyContainer.removeAllViews();
                     try {
                         JSONArray hourly = w.getJSONObject(0).getJSONArray("hourly");
@@ -476,7 +476,6 @@ public class MainActivity extends Activity {
                     } catch(Exception ignored) {}
                 }
 
-                // ✅ PREVISIONI SUCCESSIVE (compatte)
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=1; i<w.length(); i++) {
