@@ -241,7 +241,7 @@ public class MainActivity extends Activity {
     }
 
     private void showSettingsMenu() {
-        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","🗑️ Reset"},
+        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset"},
             (d, w) -> { try {
                 switch(w) { case 0: openBatteryOpt(); break; case 1: toggleRotation(); break; case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break; case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break; case 4: new AlertDialog.Builder(this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break; case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite."); break; }
             } catch(Exception e) { e.printStackTrace(); }})
@@ -268,7 +268,7 @@ public class MainActivity extends Activity {
             Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(18); cBtn.setWidth(40); cBtn.setHeight(40); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
-            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END); // ✅ FIX: Tronca testo lungo
+            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END);
             tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(13); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(16); dBtn.setWidth(36); dBtn.setHeight(36); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
             Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(14); cBtn.setWidth(34); cBtn.setHeight(34); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
-            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END); // ✅ FIX: Tronca testo lungo
+            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END);
             tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(11); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(4,0,4,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(30); dBtn.setHeight(30); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
@@ -339,13 +339,15 @@ public class MainActivity extends Activity {
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String ic="☀"; if(code.contains("nuvol")||code.contains("cloud")) ic="☁"; else if(code.contains("piogg")||code.contains("rain")) ic="🌧";
                 if(weatherIcon!=null) weatherIcon.setText(ic); if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
-                // ✅ Previsioni ORIZZONTALI compatte
+                // ✅ Previsioni ORIZZONTALI compatte (Fix API 14)
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=0;i<Math.min(7,w.length());i++) {
                         JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
                         String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(6,3,6,3); item.setMinWidth(55); item.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
+                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(6,3,6,3);
+                        item.setLayoutParams(new LinearLayout.LayoutParams(60, LinearLayout.LayoutParams.WRAP_CONTENT)); // ✅ Sostituisce setMinWidth per API 14
+                        item.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
                         TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(9);
                         String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
                         TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
