@@ -23,6 +23,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -123,30 +124,22 @@ public class MainActivity extends Activity {
             applyThemeByTime();
         } catch(Exception e) {
             e.printStackTrace();
-            showAlert("Errore Avvio", "Impossibile inizializzare l'app. " + e.getMessage());
+            showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage());
         }
     }
 
     private void validateAndLoadPrefs() {
         try {
-            String json = prefs.getString("todos", null);
-            if(json != null) new JSONArray(json);
-            json = prefs.getString("events_map", null);
-            if(json != null) new JSONObject(json);
-        } catch(Exception e) {
-            prefs.edit().clear().commit();
-            showAlert("Prefs corrotte", "Dati resettati automaticamente.");
-        }
+            String json = prefs.getString("todos", null); if(json != null) new JSONArray(json);
+            json = prefs.getString("events_map", null); if(json != null) new JSONObject(json);
+        } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
     private void applyTheme() {
         try {
             String theme = prefs.getString("theme", "classic");
-            int bg = Color.parseColor("#000000");
-            if("night".equals(theme)) bg = Color.parseColor("#050510");
-            else if("ocean".equals(theme)) bg = Color.parseColor("#0A1A2A");
-            View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) root.setBackgroundColor(bg);
+            int bg = "night".equals(theme) ? Color.parseColor("#050510") : "ocean".equals(theme) ? Color.parseColor("#0A1A2A") : Color.parseColor("#000000");
+            View root = findViewById(android.R.id.content).getRootView(); if(root != null) root.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -157,10 +150,7 @@ public class MainActivity extends Activity {
             decor.setSystemUiVisibility(uiFlags);
             decor.setOnSystemUiVisibilityChangeListener(v -> { if (v == 0) decor.setSystemUiVisibility(uiFlags); });
             View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) {
-                root.setSystemUiVisibility(uiFlags);
-                root.setOnSystemUiVisibilityChangeListener(v -> { if (v == 0) root.setSystemUiVisibility(uiFlags); });
-            }
+            if(root != null) { root.setSystemUiVisibility(uiFlags); root.setOnSystemUiVisibilityChangeListener(v -> { if (v == 0) root.setSystemUiVisibility(uiFlags); }); }
         } catch(Exception ignored) {}
     }
 
@@ -168,8 +158,7 @@ public class MainActivity extends Activity {
         try {
             int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             int bg = (hour >= 22 || hour < 6) ? 0xFF050510 : (hour < 12) ? 0xFF0A0A1A : (hour < 18) ? 0xFF120A1A : 0xFF0A0F1A;
-            View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) root.setBackgroundColor(bg);
+            View root = findViewById(android.R.id.content).getRootView(); if(root != null) root.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -195,11 +184,9 @@ public class MainActivity extends Activity {
     private void updateSystemStats() {
         try {
             ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-            am.getMemoryInfo(memInfo);
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo(); am.getMemoryInfo(memInfo);
             long total = memInfo.totalMem, avail = memInfo.availMem;
-            ramPct = (int) ((total - avail) * 100 / total);
-            cpuPct = readCpuUsage();
+            ramPct = (int) ((total - avail) * 100 / total); cpuPct = readCpuUsage();
             runOnUiThread(this::updateStatusUI);
         } catch(Exception ignored) {}
     }
@@ -220,14 +207,8 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("⚙️ Controlli Rapidi")
             .setItems(new String[]{"☀️ Luminosità", "🔊 Volume", "📶 WiFi", "🔵 Bluetooth", "🎨 Tema"},
             (d, w) -> { try {
-                switch(w) {
-                    case 0: adjustBrightness(); break;
-                    case 1: adjustVolume(); break;
-                    case 2: toggleWifi(); break;
-                    case 3: toggleBluetooth(); break;
-                    case 4: showThemeSelector(); break;
-                }
-            } catch(Exception e) { showAlert("Errore", "Funzione non disponibile su questo dispositivo."); }})
+                switch(w) { case 0: adjustBrightness(); break; case 1: adjustVolume(); break; case 2: toggleWifi(); break; case 3: toggleBluetooth(); break; case 4: showThemeSelector(); break; }
+            } catch(Exception e) { showAlert("Errore", "Funzione non disponibile."); }})
             .setNegativeButton("Chiudi", null).show();
     }
 
@@ -246,60 +227,23 @@ public class MainActivity extends Activity {
             .setPositiveButton("OK", (d, w) -> { try { am.setStreamVolume(AudioManager.STREAM_MUSIC, Integer.parseInt(input.getText().toString()), 0); } catch(Exception e) {} }).show();
     }
 
-    private void toggleWifi() {
-        try {
-            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); }
-        } catch(Exception e) { showAlert("WiFi", "Impossibile modificare. Controlla permessi."); }
-    }
-
-    private void toggleBluetooth() {
-        try {
-            BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter();
-            if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); }
-        } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare. Controlla permessi."); }
-    }
-
+    private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
+    private void toggleBluetooth() { try { BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter(); if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); } } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare."); } }
     private void showThemeSelector() {
-        final String[] themes = {"🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
-        final String[] keys = {"classic", "night", "ocean"};
-        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, (d, w) -> {
-            prefs.edit().putString("theme", keys[w]).commit(); applyTheme(); showAlert("Tema", "Applicato: " + themes[w]);
-        }).show();
+        final String[] themes = {"🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"}; final String[] keys = {"classic", "night", "ocean"};
+        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, (d, w) -> { prefs.edit().putString("theme", keys[w]).commit(); applyTheme(); showAlert("Tema", "Applicato: " + themes[w]); }).show();
     }
 
-    private void startVoiceInput() {
-        try {
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota...");
-            startActivityForResult(intent, VOICE_REQ);
-        } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile. Usa tastiera."); }
-    }
-
+    private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == VOICE_REQ && resultCode == RESULT_OK && data != null) {
-            try {
-                List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                if(results != null && results.size() > 0) {
-                    todos.add(0, new TodoItem(results.get(0), false)); saveData();
-                    runOnUiThread(() -> { if(todoAdapter != null) todoAdapter.notifyDataSetChanged(); });
-                }
-            } catch(Exception ignored) {}
-        }
+        if(requestCode == VOICE_REQ && resultCode == RESULT_OK && data != null) { try { List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS); if(results != null && !results.isEmpty()) { todos.add(0, new TodoItem(results.get(0), false)); saveData(); runOnUiThread(() -> { if(todoAdapter != null) todoAdapter.notifyDataSetChanged(); }); } } catch(Exception ignored) {} }
     }
 
     private void showSettingsMenu() {
-        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset Prefs"},
+        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","🗑️ Reset"},
             (d, w) -> { try {
-                switch(w) {
-                    case 0: openBatteryOpt(); break; case 1: toggleRotation(); break;
-                    case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break;
-                    case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break;
-                    case 4: new AlertDialog.Builder(this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break;
-                    case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite. Riavvia app."); break;
-                }
+                switch(w) { case 0: openBatteryOpt(); break; case 1: toggleRotation(); break; case 2: startActivity(new Intent(Settings.ACTION_DISPLAY_SETTINGS)); break; case 3: startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); break; case 4: new AlertDialog.Builder(this).setTitle("Launcher").setMessage("Premi HOME → Dashboard Pietro → Sempre").setPositiveButton("OK",null).show(); break; case 5: prefs.edit().clear().commit(); showAlert("Reset", "Prefs pulite."); break; }
             } catch(Exception e) { e.printStackTrace(); }})
             .setNegativeButton("Chiudi",null).show();
     }
@@ -321,10 +265,13 @@ public class MainActivity extends Activity {
         @Override public int getCount() { return todos.size(); } @Override public Object getItem(int p) { return todos.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#1A1A1A"));
-            Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(18); cBtn.setWidth(45); cBtn.setHeight(45); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
+            Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(18); cBtn.setWidth(40); cBtn.setHeight(40); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); }));
-            TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text); tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(14); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(10,0,10,0);
-            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(18); dBtn.setWidth(45); dBtn.setHeight(45); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.parseColor("#FFFFFF")); dBtn.setGravity(Gravity.CENTER);
+            TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
+            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END); // ✅ FIX: Tronca testo lungo
+            tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(13); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(16); dBtn.setWidth(36); dBtn.setHeight(36); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos;
             dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ todos.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
@@ -333,11 +280,14 @@ public class MainActivity extends Activity {
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents.size(); } @Override public Object getItem(int p) { return dayEvents.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
-            LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#222222"));
-            Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(16); cBtn.setWidth(40); cBtn.setHeight(40); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
+            LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(6,4,6,4); row.setBackgroundColor(Color.parseColor("#222222"));
+            Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(14); cBtn.setWidth(34); cBtn.setHeight(34); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); }));
-            TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display()); tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(12); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(8,0,8,0);
-            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(16); dBtn.setWidth(40); dBtn.setHeight(40); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.parseColor("#FFFFFF")); dBtn.setGravity(Gravity.CENTER);
+            TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
+            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END); // ✅ FIX: Tronca testo lungo
+            tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(11); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(4,0,4,0);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(30); dBtn.setHeight(30); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos; final String finalDate = selectedDate;
             dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
@@ -357,17 +307,12 @@ public class MainActivity extends Activity {
     }
     private void updateDayEventsDisplay() {
         if(selectedDate!=null && eventsByDate.containsKey(selectedDate) && !eventsByDate.get(selectedDate).isEmpty()) {
-            dayEvents = eventsByDate.get(selectedDate);
-            String[] months={"Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"};
+            dayEvents = eventsByDate.get(selectedDate); String[] months={"Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"};
             String disp = selectedDate.substring(8)+" "+months[Integer.parseInt(selectedDate.substring(5,7))-1];
             if(selectedDayTitle!=null) selectedDayTitle.setText("📅 "+disp); if(dayEventsPanel!=null) dayEventsPanel.setVisibility(View.VISIBLE); if(dayEventsAdapter!=null) dayEventsAdapter.notifyDataSetChanged();
         } else if(dayEventsPanel!=null) dayEventsPanel.setVisibility(View.GONE);
     }
-    private void updateCalendarDisplay() {
-        String[] months={"Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"};
-        if(calendarMonth!=null) calendarMonth.setText(months[currentCal.get(Calendar.MONTH)]+" "+currentCal.get(Calendar.YEAR));
-        if(calendarAdapter!=null) runOnUiThread(calendarAdapter::notifyDataSetChanged);
-    }
+    private void updateCalendarDisplay() { String[] months={"Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"}; if(calendarMonth!=null) calendarMonth.setText(months[currentCal.get(Calendar.MONTH)]+" "+currentCal.get(Calendar.YEAR)); if(calendarAdapter!=null) runOnUiThread(calendarAdapter::notifyDataSetChanged); }
     private class CalendarAdapter extends BaseAdapter {
         @Override public int getCount() { return 42; } @Override public Object getItem(int p) { return null; } @Override public long getItemId(int p) { return 0; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
@@ -375,19 +320,14 @@ public class MainActivity extends Activity {
             try {
                 Calendar cal = (Calendar) currentCal.clone(); cal.set(Calendar.DAY_OF_MONTH, 1);
                 int firstDay = cal.get(Calendar.DAY_OF_WEEK); int offset = (firstDay==Calendar.SUNDAY)?6:firstDay-2; int dayNum = pos-offset+1;
-                cal.add(Calendar.DAY_OF_MONTH, pos-offset);
-                final String key = new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(cal.getTime());
-                boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty();
-                boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH);
-                boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
-                TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(16); tv.setTextColor(Color.parseColor("#CCCCCC"));
-                TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(10); dot.setTextColor(Color.parseColor("#D4AF37"));
+                cal.add(Calendar.DAY_OF_MONTH, pos-offset); final String key = new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(cal.getTime());
+                boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
+                TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
+                TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
                 if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#050505")); cell.setEnabled(false); }
                 else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
-                cell.setOnClickListener(v -> { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } });
-                cell.addView(tv); cell.addView(dot);
-            } catch(Exception e) { e.printStackTrace(); }
-            return cell;
+                cell.setOnClickListener(v -> { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }); cell.addView(tv); cell.addView(dot);
+            } catch(Exception e) { e.printStackTrace(); } return cell;
         }
     }
     private void startClock() { clockHandler.postDelayed(()->{ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this::startClock,1000); } catch(Exception ignored) {} },1000); }
@@ -398,16 +338,24 @@ public class MainActivity extends Activity {
                 JSONObject j=new JSONObject(res); JSONObject cur=j.getJSONArray("current_condition").getJSONObject(0); JSONArray w=j.getJSONArray("weather");
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String ic="☀"; if(code.contains("nuvol")||code.contains("cloud")) ic="☁"; else if(code.contains("piogg")||code.contains("rain")) ic="🌧";
                 if(weatherIcon!=null) weatherIcon.setText(ic); if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
-                if(forecastContainer!=null) { forecastContainer.removeAllViews(); TextView t=new TextView(MainActivity.this); t.setText("Previsioni 3 gg"); t.setTextColor(Color.parseColor("#D4AF37")); t.setTextSize(10); t.setTypeface(null,Typeface.BOLD); t.setPadding(0,0,0,6); forecastContainer.addView(t);
-                    String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"}; for(int i=0;i<Math.min(3,w.length());i++) { JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds)); String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout r=new LinearLayout(MainActivity.this); r.setOrientation(LinearLayout.HORIZONTAL); r.setPadding(6,4,6,4); r.setGravity(Gravity.CENTER_VERTICAL); r.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
-                        TextView td=new TextView(MainActivity.this); td.setText(dy); td.setTextColor(Color.parseColor("#D4AF37")); td.setTextSize(10); td.setWidth(45); td.setGravity(Gravity.CENTER);
-                        TextView td2=new TextView(MainActivity.this); td2.setText(ds.substring(8)); td2.setTextColor(Color.parseColor("#888888")); td2.setTextSize(10); td2.setWidth(30);
+
+                // ✅ Previsioni ORIZZONTALI compatte
+                if(forecastContainer!=null) { forecastContainer.removeAllViews();
+                    String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
+                    for(int i=0;i<Math.min(7,w.length());i++) {
+                        JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
+                        String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
+                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(6,3,6,3); item.setMinWidth(55); item.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
+                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(9);
                         String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
-                        TextView ti=new TextView(MainActivity.this); ti.setText(wi); ti.setTextColor(Color.parseColor("#FFFFFF")); ti.setTextSize(12); ti.setWidth(30); ti.setGravity(Gravity.CENTER);
-                        TextView tt=new TextView(MainActivity.this); tt.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tt.setTextColor(Color.parseColor("#FFFFFF")); tt.setTextSize(11); tt.setGravity(Gravity.RIGHT);
-                        r.addView(td); r.addView(td2); r.addView(ti); r.addView(tt); forecastContainer.addView(r); } } } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); } }
-        }.execute();
+                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
+                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
+                        item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
+                        forecastContainer.addView(item);
+                    }
+                }
+            } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
+        } }.execute();
     }
     private void startWeatherRefresh() { weatherHandler.postDelayed(()->{ loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh,1800000); },1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
