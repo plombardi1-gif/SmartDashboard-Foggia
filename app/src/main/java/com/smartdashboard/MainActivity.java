@@ -29,7 +29,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -37,9 +36,6 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.bluetooth.BluetoothAdapter;
 import org.json.JSONArray;
@@ -226,14 +222,19 @@ public class MainActivity extends Activity {
             }).setNegativeButton("Chiudi", null).show();
     }
 
+    // ✅ FIX: Usa final EditText invece di findViewById su DialogInterface
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
+        final EditText input = new EditText(this);
+        input.setHint("0-255");
+        input.setBackgroundColor(Color.parseColor("#1A1A1A"));
+        input.setTextColor(Color.parseColor("#FFFFFF"));
         new AlertDialog.Builder(this).setTitle("Luminosità")
-            .setView(new EditText(this))
+            .setView(input)
             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     try {
-                        int val = Integer.parseInt(((EditText)d.findViewById(android.R.id.input)).getText().toString());
+                        int val = Integer.parseInt(input.getText().toString());
                         val = Math.max(0, Math.min(255, val));
                         lp.screenBrightness = val / 255f;
                         getWindow().setAttributes(lp);
@@ -245,12 +246,16 @@ public class MainActivity extends Activity {
     }
 
     private void adjustVolume() {
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        final EditText input = new EditText(this);
+        input.setHint("0-15");
+        input.setBackgroundColor(Color.parseColor("#1A1A1A"));
+        input.setTextColor(Color.parseColor("#FFFFFF"));
+        final AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         new AlertDialog.Builder(this).setTitle("Volume")
-            .setView(new EditText(this))
+            .setView(input)
             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
-                    try { int v = Integer.parseInt(((EditText)d.findViewById(android.R.id.input)).getText().toString()); am.setStreamVolume(AudioManager.STREAM_MUSIC, v, 0); } catch(Exception e) {}
+                    try { int v = Integer.parseInt(input.getText().toString()); am.setStreamVolume(AudioManager.STREAM_MUSIC, v, 0); } catch(Exception e) {}
                 }
             }).show();
     }
@@ -311,7 +316,7 @@ public class MainActivity extends Activity {
     }
 
     private void showSettingsMenu() {
-        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","🗑️ Reset Prefs"},
+        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(new String[]{"🔋 Batteria","🔄 Rotazione","⏱️ Timeout","🔒 Blocco","📱 Launcher","️ Reset Prefs"},
             new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     switch(w) {
