@@ -55,12 +55,11 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private TextView clockText, dateText, smartHomeText, batteryText, weatherIcon, weatherTemp, weatherMinMax, weatherDetails;
+    private TextView clockText, dateText, smartHomeText, batteryText, weatherIcon, weatherTemp, weatherCondition, weatherMinMax, weatherHumidity, weatherWind, weatherRain;
     private TextView calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
-    private LinearLayout dayEventsPanel, forecastContainer, hourlyContainer, rootLayout;
-    // ✅ RIMOSSI: btnCamera, btnQuickControls
+    private LinearLayout dayEventsPanel, rootLayout;
     private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnVoice;
     private Handler clockHandler, weatherHandler, statsHandler;
     private SharedPreferences prefs;
@@ -97,16 +96,16 @@ public class MainActivity extends Activity {
 
             rootLayout = (LinearLayout) findViewById(R.id.rootLayout);
             clockText = (TextView) findViewById(R.id.clock); dateText = (TextView) findViewById(R.id.date); smartHomeText = (TextView) findViewById(R.id.smartHomeText);
-            batteryText = (TextView) findViewById(R.id.batteryText); weatherIcon = (TextView) findViewById(R.id.weatherIcon); weatherTemp = (TextView) findViewById(R.id.weatherTemp);
-            weatherMinMax = (TextView) findViewById(R.id.weatherMinMax); weatherDetails = (TextView) findViewById(R.id.weatherDetails);
+            batteryText = (TextView) findViewById(R.id.batteryText);
+            weatherIcon = (TextView) findViewById(R.id.weatherIcon); weatherTemp = (TextView) findViewById(R.id.weatherTemp);
+            weatherCondition = (TextView) findViewById(R.id.weatherCondition);
+            weatherMinMax = (TextView) findViewById(R.id.weatherMinMax); weatherHumidity = (TextView) findViewById(R.id.weatherHumidity);
+            weatherWind = (TextView) findViewById(R.id.weatherWind); weatherRain = (TextView) findViewById(R.id.weatherRain);
             calendarMonth = (TextView) findViewById(R.id.calendarMonth);
             calendarGrid = (GridView) findViewById(R.id.calendarGrid); todoList = (ListView) findViewById(R.id.todoList); dayEventsList = (ListView) findViewById(R.id.dayEventsList);
-            dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel); forecastContainer = (LinearLayout) findViewById(R.id.forecastContainer); 
-            hourlyContainer = (LinearLayout) findViewById(R.id.hourlyContainer);
-            selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
+            dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel); selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
             btnAddEvt = (Button) findViewById(R.id.btnAddEvt); btnAddTodo = (Button) findViewById(R.id.btnAddTodo); btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
             btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather);
-            // ✅ RIMOSSI findViewById per btnCamera e btnQuickControls
             btnVoice = (Button) findViewById(R.id.btnVoice);
 
             prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
@@ -126,8 +125,6 @@ public class MainActivity extends Activity {
             if(btnPrevMonth != null) btnPrevMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); } });
             if(btnNextMonth != null) btnNextMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); } });
             if(btnRefreshWeather != null) btnRefreshWeather.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { loadWeather(); } });
-            // ✅ RIMOSSI setOnClickListener per btnCamera e btnQuickControls
-            
             if(clockText != null) clockText.setOnLongClickListener(new View.OnLongClickListener() { public boolean onLongClick(View v) { showSettingsMenu(); return true; } });
 
             setupFullScreen();
@@ -432,69 +429,24 @@ public class MainActivity extends Activity {
                 JSONObject j=new JSONObject(res); JSONObject cur=j.getJSONArray("current_condition").getJSONObject(0); JSONArray w=j.getJSONArray("weather");
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); 
                 if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code)); 
-                if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); 
-                
-                String minMax = "";
-                int maxRain = 0;
+                if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C");
+                if(weatherCondition!=null) weatherCondition.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value"));
+
+                // Dettagli Oggi
+                String minMax = "", humid = "", wind = "", rain = "";
                 try {
                     JSONObject today = w.getJSONObject(0);
                     minMax = "Min:"+today.getString("mintempC")+"° Max:"+today.getString("maxtempC")+"°";
-                    JSONArray hourly = today.getJSONArray("hourly");
-                    for(int i=0; i<hourly.length(); i++) {
-                        int r = hourly.getJSONObject(i).optInt("chanceofrain", 0);
-                        if(r > maxRain) maxRain = r;
-                    }
+                    humid = "💧 "+cur.optString("humidity","?")+"%";
+                    wind = "💨 "+cur.optString("windspeedKmph","?")+" km/h "+cur.optString("winddir16Point","");
+                    int maxR = 0; JSONArray hourly = today.getJSONArray("hourly");
+                    for(int i=0; i<hourly.length(); i++) { int r = hourly.getJSONObject(i).optInt("chanceofrain", 0); if(r > maxR) maxR = r; }
+                    rain = "🌧 "+maxR+"%";
                 } catch(Exception ignored) {}
                 if(weatherMinMax!=null) weatherMinMax.setText(minMax);
-                
-                String details = "";
-                try {
-                    String wind = cur.optString("windspeedKmph", "?") + " km/h " + cur.optString("winddir16Point", "");
-                    String humid = cur.optString("humidity", "?") + "%";
-                    details = "💨 " + wind + " | 💧 " + humid + " | 🌧 " + maxRain + "%";
-                } catch(Exception ignored) {}
-                if(weatherDetails!=null) weatherDetails.setText(details);
-
-                if(hourlyContainer!=null) { hourlyContainer.removeAllViews();
-                    try {
-                        JSONArray hourly = w.getJSONObject(0).getJSONArray("hourly");
-                        int[] indices = {0, 3, 6, 9, 12, 15, 18, 21};
-                        for(int idx : indices) {
-                            if(idx >= hourly.length()) break;
-                            JSONObject h = hourly.getJSONObject(idx);
-                            String time = h.optString("time", "");
-                            if(time.length()>=4) time = time.substring(0,2)+":"+time.substring(2);
-                            String temp = h.optString("tempC", "?")+"°";
-                            String wd = h.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
-                            LinearLayout item = new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,8,0);
-                            TextView tvTime = new TextView(MainActivity.this); tvTime.setText(time); tvTime.setTextColor(Color.parseColor("#A0A0A0")); tvTime.setTextSize(7);
-                            TextView tvIcon = new TextView(MainActivity.this); tvIcon.setText(getWeatherEmoji(wd)); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(10);
-                            TextView tvTemp = new TextView(MainActivity.this); tvTemp.setText(temp); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(8);
-                            item.addView(tvTime); item.addView(tvIcon); item.addView(tvTemp);
-                            hourlyContainer.addView(item);
-                        }
-                    } catch(Exception ignored) {}
-                }
-
-                if(forecastContainer!=null) { forecastContainer.removeAllViews();
-                    String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
-                    for(int i=1; i<w.length(); i++) {
-                        try {
-                            JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
-                            String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                            String min=d.optString("mintempC","?")+"°"; String max=d.optString("maxtempC","?")+"°";
-                            int rain=0; JSONArray h=d.getJSONArray("hourly"); for(int k=0;k<h.length();k++){int r=h.getJSONObject(k).optInt("chanceofrain",0); if(r>rain)rain=r;}
-                            String wd=h.getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
-                            LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
-                            TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(8);
-                            TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(getWeatherEmoji(wd)); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(11);
-                            TextView tvMinMax=new TextView(MainActivity.this); tvMinMax.setText(min+"/"+max); tvMinMax.setTextColor(Color.WHITE); tvMinMax.setTextSize(8);
-                            TextView tvRain=new TextView(MainActivity.this); tvRain.setText("🌧"+rain+"%"); tvRain.setTextColor(Color.parseColor("#A0A0A0")); tvRain.setTextSize(7);
-                            item.addView(tvDay); item.addView(tvIcon); item.addView(tvMinMax); item.addView(tvRain);
-                            forecastContainer.addView(item);
-                        } catch(Exception ignored) {}
-                    }
-                }
+                if(weatherHumidity!=null) weatherHumidity.setText(humid);
+                if(weatherWind!=null) weatherWind.setText(wind);
+                if(weatherRain!=null) weatherRain.setText(rain);
             } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
         } }.execute();
     }
