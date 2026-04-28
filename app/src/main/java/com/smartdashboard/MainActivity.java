@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.AudioManager;
@@ -22,7 +21,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;
@@ -43,7 +41,6 @@ import android.bluetooth.BluetoothAdapter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
@@ -58,12 +55,12 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private TextView clockText, dateText, smartHomeText, batteryText, weatherIcon, weatherTemp, weatherDesc, weatherWind;
+    private TextView clockText, dateText, smartHomeText, batteryText, weatherIcon, weatherTemp, weatherMinMax, weatherDetails;
     private TextView calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
-    private LinearLayout dayEventsPanel, forecastContainer, weatherForecastRow, rootLayout;
-    private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnQuickControls, btnVoice, btnCamera;
+    private LinearLayout dayEventsPanel, forecastContainer, hourlyContainer, rootLayout;
+    private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnQuickControls, btnVoice;
     private Handler clockHandler, weatherHandler, statsHandler;
     private SharedPreferences prefs;
     private ArrayList<TodoItem> todos;
@@ -79,7 +76,6 @@ public class MainActivity extends Activity {
     private int batteryPct = 100, ramPct = 0, cpuPct = 0;
     private boolean isCharging = false;
     private static final int VOICE_REQ = 1001;
-    private static final int CAMERA_REQ = 1002;
     private HashMap<Integer, Boolean> expandedNotes = new HashMap<Integer, Boolean>();
     private HashMap<Integer, Boolean> expandedEvents = new HashMap<Integer, Boolean>();
 
@@ -101,17 +97,19 @@ public class MainActivity extends Activity {
             rootLayout = (LinearLayout) findViewById(R.id.rootLayout);
             clockText = (TextView) findViewById(R.id.clock); dateText = (TextView) findViewById(R.id.date); smartHomeText = (TextView) findViewById(R.id.smartHomeText);
             batteryText = (TextView) findViewById(R.id.batteryText); weatherIcon = (TextView) findViewById(R.id.weatherIcon); weatherTemp = (TextView) findViewById(R.id.weatherTemp);
-            weatherDesc = (TextView) findViewById(R.id.weatherDesc); weatherWind = (TextView) findViewById(R.id.weatherWind); calendarMonth = (TextView) findViewById(R.id.calendarMonth);
+            weatherMinMax = (TextView) findViewById(R.id.weatherMinMax); weatherDetails = (TextView) findViewById(R.id.weatherDetails);
+            calendarMonth = (TextView) findViewById(R.id.calendarMonth);
             calendarGrid = (GridView) findViewById(R.id.calendarGrid); todoList = (ListView) findViewById(R.id.todoList); dayEventsList = (ListView) findViewById(R.id.dayEventsList);
-            dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel); forecastContainer = (LinearLayout) findViewById(R.id.forecastContainer); selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
-            weatherForecastRow = (LinearLayout) findViewById(R.id.weatherForecastRow);
+            dayEventsPanel = (LinearLayout) findViewById(R.id.dayEventsPanel); forecastContainer = (LinearLayout) findViewById(R.id.forecastContainer); 
+            hourlyContainer = (LinearLayout) findViewById(R.id.hourlyContainer);
+            selectedDayTitle = (TextView) findViewById(R.id.selectedDayTitle);
             btnAddEvt = (Button) findViewById(R.id.btnAddEvt); btnAddTodo = (Button) findViewById(R.id.btnAddTodo); btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
             btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather); btnQuickControls = (Button) findViewById(R.id.btnQuickControls);
-            btnVoice = (Button) findViewById(R.id.btnVoice); btnCamera = (Button) findViewById(R.id.btnCamera);
+            btnVoice = (Button) findViewById(R.id.btnVoice);
 
             prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
             validateAndLoadPrefs();
-            applyTheme(); // ✅ Applica tema subito all'avvio
+            applyTheme();
             loadData(); setupAdapters(); registerBatteryReceiver();
             currentCal = Calendar.getInstance(); calendarAdapter = new CalendarAdapter();
             if(calendarGrid != null) { calendarGrid.setAdapter(calendarAdapter); updateCalendarDisplay(); }
@@ -123,7 +121,6 @@ public class MainActivity extends Activity {
             if(btnAddEvt != null) btnAddEvt.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { showAddEventDialog(selectedDate); } });
             if(btnAddTodo != null) btnAddTodo.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { showAddTodoDialog(); } });
             if(btnVoice != null) btnVoice.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { startVoiceInput(); } });
-            if(btnCamera != null) btnCamera.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { takePhoto(); } });
             if(btnPrevMonth != null) btnPrevMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, -1); updateCalendarDisplay(); } });
             if(btnNextMonth != null) btnNextMonth.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); } });
             if(btnRefreshWeather != null) btnRefreshWeather.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { loadWeather(); } });
@@ -144,7 +141,6 @@ public class MainActivity extends Activity {
         } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
-    // ✅ FIX TEMA: Applica direttamente su rootLayout, non su getRootView()
     private void applyTheme() {
         try {
             String theme = prefs.getString("theme", "auto");
@@ -168,12 +164,10 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
-    // ✅ FIX TEMA: Rispetta selezione manuale, non sovrascrive se != "auto"
     private void applyThemeByTime() {
         try {
             String theme = prefs.getString("theme", "auto");
-            if(!"auto".equals(theme)) return; // Tema manuale: esci subito
-
+            if(!"auto".equals(theme)) return;
             long[] sunTimes = getSunTimesFoggia();
             long now = System.currentTimeMillis();
             boolean isDay = now > sunTimes[0] && now < sunTimes[1];
@@ -292,7 +286,6 @@ public class MainActivity extends Activity {
     private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
     private void toggleBluetooth() { try { BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter(); if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); } } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare."); } }
     
-    // ✅ FIX TEMA: Salva, applica subito, forza refresh UI
     private void showThemeSelector() {
         final String[] themes = {"🌅 Auto Solare", "🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
         final String[] keys = {"auto", "classic", "night", "ocean"};
@@ -305,22 +298,10 @@ public class MainActivity extends Activity {
     }
 
     private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
-    
-    private void takePhoto() {
-        try {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            File dir = new File(android.os.Environment.getExternalStorageDirectory(), "DashboardPietro/photos");
-            if(!dir.exists()) dir.mkdirs();
-            File file = new File(dir, "IMG_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".jpg");
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(file));
-            startActivityForResult(intent, CAMERA_REQ);
-        } catch(Exception e) { showAlert("Camera", "Impossibile avviare fotocamera."); }
-    }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == VOICE_REQ && resultCode == RESULT_OK && data != null) { try { List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS); if(results != null && !results.isEmpty()) { todos.add(0, new TodoItem(results.get(0), false)); saveData(); runOnUiThread(new Runnable() { public void run() { if(todoAdapter != null) todoAdapter.notifyDataSetChanged(); } }); } } catch(Exception ignored) {} }
-        else if(requestCode == CAMERA_REQ && resultCode == RESULT_OK) { showAlert("Fotocamera", "Foto salvata in DashboardPietro/photos/"); }
     }
 
     private void showSettingsMenu() {
@@ -363,7 +344,6 @@ public class MainActivity extends Activity {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#1A1A1A"));
             Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(16); cBtn.setWidth(36); cBtn.setHeight(36); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { runOnUiThread(new Runnable() { public void run() { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); } }); }});
-            
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
             final int finalPos = pos;
             boolean exp = expandedNotes.containsKey(finalPos) && expandedNotes.get(finalPos);
@@ -372,7 +352,6 @@ public class MainActivity extends Activity {
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             tv.setFocusable(false); tv.setClickable(true);
             tv.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { expandedNotes.put(finalPos, !exp); runOnUiThread(new Runnable() { public void run() { todoAdapter.notifyDataSetChanged(); } }); }});
-            
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(32); dBtn.setHeight(32); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ todos.remove(finalPos); expandedNotes.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); }}); }}).setNegativeButton("No",null).show(); }});
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
@@ -385,7 +364,6 @@ public class MainActivity extends Activity {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(6,4,6,4); row.setBackgroundColor(Color.parseColor("#222222"));
             Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(13); cBtn.setWidth(30); cBtn.setHeight(30); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { runOnUiThread(new Runnable() { public void run() { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); } }); }});
-            
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
             final int finalPos = pos;
             boolean exp = expandedEvents.containsKey(finalPos) && expandedEvents.get(finalPos);
@@ -394,7 +372,6 @@ public class MainActivity extends Activity {
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             tv.setFocusable(false); tv.setClickable(true);
             tv.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { expandedEvents.put(finalPos, !exp); runOnUiThread(new Runnable() { public void run() { dayEventsAdapter.notifyDataSetChanged(); } }); }});
-            
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(13); dBtn.setWidth(28); dBtn.setHeight(28); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final String finalDate = selectedDate;
             dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; expandedEvents.remove(finalPos); saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } }}); }}).setNegativeButton("No",null).show(); }});
@@ -436,11 +413,8 @@ public class MainActivity extends Activity {
                 TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
                 TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
                 if(dayNum<1 || dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isMonth) { 
-                    tv.setText(""); dot.setText(""); 
-                    cell.setBackgroundColor(Color.TRANSPARENT); 
-                    cell.setEnabled(false); cell.setClickable(false); cell.setFocusable(false); cell.setPadding(0,0,0,0);
-                }
-                else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
+                    tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.TRANSPARENT); cell.setEnabled(false); cell.setClickable(false); cell.setFocusable(false); cell.setPadding(0,0,0,0);
+                } else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
                 cell.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }}); cell.addView(tv); cell.addView(dot);
             } catch(Exception e) { e.printStackTrace(); } return cell;
         }
@@ -454,35 +428,70 @@ public class MainActivity extends Activity {
             try { if(res.equals("ERRORE")) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Offline"); return; }
                 JSONObject j=new JSONObject(res); JSONObject cur=j.getJSONArray("current_condition").getJSONObject(0); JSONArray w=j.getJSONArray("weather");
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); 
-                String ic = getWeatherEmoji(code);
-                if(weatherIcon!=null) weatherIcon.setText(ic); 
+                if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code)); 
                 if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); 
-                if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); 
-                if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
+                
+                // Min/Max e Pioggia massima oggi
+                String minMax = "";
+                int maxRain = 0;
+                try {
+                    JSONObject today = w.getJSONObject(0);
+                    minMax = "Min:"+today.getString("mintempC")+"° Max:"+today.getString("maxtempC")+"°";
+                    JSONArray hourly = today.getJSONArray("hourly");
+                    for(int i=0; i<hourly.length(); i++) {
+                        int r = hourly.getJSONObject(i).optInt("chanceofrain", 0);
+                        if(r > maxRain) maxRain = r;
+                    }
+                } catch(Exception ignored) {}
+                if(weatherMinMax!=null) weatherMinMax.setText(minMax);
+                
+                // Dettagli: Vento, Umidità, Pioggia
+                String details = "";
+                try {
+                    String wind = cur.optString("windspeedKmph", "?") + " km/h " + cur.optString("winddir16Point", "");
+                    String humid = cur.optString("humidity", "?") + "%";
+                    details = "💨 " + wind + " | 💧 " + humid + " | 🌧 " + maxRain + "%";
+                } catch(Exception ignored) {}
+                if(weatherDetails!=null) weatherDetails.setText(details);
 
-                // ✅ FIX EMOJI PREVISIONI: Parsing robusto, fallback, layout corretto
+                // ✅ ORARI OGGI (ogni 3 ore: 0,3,6,9,12,15,18,21)
+                if(hourlyContainer!=null) { hourlyContainer.removeAllViews();
+                    try {
+                        JSONArray hourly = w.getJSONObject(0).getJSONArray("hourly");
+                        int[] indices = {0, 3, 6, 9, 12, 15, 18, 21};
+                        for(int idx : indices) {
+                            if(idx >= hourly.length()) break;
+                            JSONObject h = hourly.getJSONObject(idx);
+                            String time = h.optString("time", "");
+                            if(time.length()>=4) time = time.substring(0,2)+":"+time.substring(2);
+                            String temp = h.optString("tempC", "?")+"°";
+                            String wd = h.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
+                            LinearLayout item = new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,8,0);
+                            TextView tvTime = new TextView(MainActivity.this); tvTime.setText(time); tvTime.setTextColor(Color.parseColor("#A0A0A0")); tvTime.setTextSize(7);
+                            TextView tvIcon = new TextView(MainActivity.this); tvIcon.setText(getWeatherEmoji(wd)); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(10);
+                            TextView tvTemp = new TextView(MainActivity.this); tvTemp.setText(temp); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(8);
+                            item.addView(tvTime); item.addView(tvIcon); item.addView(tvTemp);
+                            hourlyContainer.addView(item);
+                        }
+                    } catch(Exception ignored) {}
+                }
+
+                // ✅ PREVISIONI SUCCESSIVE (compatte)
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=1; i<w.length(); i++) {
                         try {
                             JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
                             String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
+                            String min=d.optString("mintempC","?")+"°"; String max=d.optString("maxtempC","?")+"°";
+                            int rain=0; JSONArray h=d.getJSONArray("hourly"); for(int k=0;k<h.length();k++){int r=h.getJSONObject(k).optInt("chanceofrain",0); if(r>rain)rain=r;}
+                            String wd=h.getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
                             LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
-                            TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(9);
-                            
-                            JSONArray hourly = d.getJSONArray("hourly");
-                            String wd = "clear";
-                            String temp = "?";
-                            if(hourly.length() > 6) {
-                                JSONObject h6 = hourly.getJSONObject(6);
-                                try { wd = h6.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); } catch(Exception ignored) {}
-                                try { temp = h6.getString("tempC")+"°"; } catch(Exception ignored) {}
-                            }
-                            String wi = getWeatherEmoji(wd);
-                            
-                            TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
-                            TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(temp); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
-                            item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
+                            TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(8);
+                            TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(getWeatherEmoji(wd)); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(11);
+                            TextView tvMinMax=new TextView(MainActivity.this); tvMinMax.setText(min+"/"+max); tvMinMax.setTextColor(Color.WHITE); tvMinMax.setTextSize(8);
+                            TextView tvRain=new TextView(MainActivity.this); tvRain.setText("🌧"+rain+"%"); tvRain.setTextColor(Color.parseColor("#A0A0A0")); tvRain.setTextSize(7);
+                            item.addView(tvDay); item.addView(tvIcon); item.addView(tvMinMax); item.addView(tvRain);
                             forecastContainer.addView(item);
                         } catch(Exception ignored) {}
                     }
@@ -494,10 +503,10 @@ public class MainActivity extends Activity {
     private String getWeatherEmoji(String desc) {
         if(desc.contains("piogg")||desc.contains("rain")||desc.contains("rovescio")) return "🌧";
         if(desc.contains("acquazzon")||desc.contains("shower")) return "🌦";
-        if(desc.contains("nevic")||desc.contains("snow")||desc.contains("graupel")) return "❄️";
+        if(desc.contains("nevic")||desc.contains("snow")||desc.contains("graupel")) return "❄";
         if(desc.contains("temp")||desc.contains("thunder")||desc.contains("fulmine")) return "⛈";
-        if(desc.contains("nuvol")||desc.contains("cloud")||desc.contains("neb")) return "☁️";
-        if(desc.contains("sereno")||desc.contains("clear")||desc.contains("sole")||desc.contains("sunny")) return "☀️";
+        if(desc.contains("nuvol")||desc.contains("cloud")||desc.contains("neb")) return "☁";
+        if(desc.contains("sereno")||desc.contains("clear")||desc.contains("sole")||desc.contains("sunny")) return "☀";
         if(desc.contains("poco")||desc.contains("partly")) return "⛅";
         if(desc.contains("nebbia")||desc.contains("fog")||desc.contains("mist")) return "🌫";
         return "🌤";
