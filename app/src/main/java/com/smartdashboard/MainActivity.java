@@ -454,39 +454,42 @@ public class MainActivity extends Activity {
                     if(weatherCondition!=null) weatherCondition.setText(getWeatherText(code));
                     if(weatherMinMax!=null) weatherMinMax.setText("Min "+daily.optString("temperature_2m_min","?")+"°C | Max "+daily.optString("temperature_2m_max","?")+"°C");
 
-                    // ✅ UV, Pioggia%, Alb/Tram
-                    String wind=getWindDirection(cur.optDouble("wind_direction_10m",0));
-                    int currentUv=0, currentRain=0, startIdx=0;
-                    String sunriseStr="--:--", sunsetStr="--:--";
-                    
+                    // ✅ Parsing Vento, UV, Pioggia, Alba/Tramonto
+                    String windSpeed = cur.optString("wind_speed_10m","?");
+                    String windDir = getWindDirection(cur.optDouble("wind_direction_10m",0));
+                    int currentUv = 0;
+                    int currentRain = 0;
+                    String sunriseStr = "--:--";
+                    String sunsetStr = "--:--";
+
                     try {
-                        String sr=daily.optString("sunrise","");
-                        String ss=daily.optString("sunset","");
-                        if(sr.length()>=16) sunriseStr=sr.substring(11,16);
-                        if(ss.length()>=16) sunsetStr=ss.substring(11,16);
+                        String sr = daily.optString("sunrise","");
+                        String ss = daily.optString("sunset","");
+                        if(sr.length()>=16) sunriseStr = sr.substring(11,16);
+                        if(ss.length()>=16) sunsetStr = ss.substring(11,16);
                     } catch(Exception ignored) {}
 
-                    JSONArray hTime=hourlyObj.getJSONArray("time");
-                    JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
-                    JSONArray hCode=hourlyObj.optJSONArray("weather_code");
-                    JSONArray hUv=hourlyObj.optJSONArray("uv_index");
-                    JSONArray hRain=hourlyObj.optJSONArray("precipitation_probability");
-                    int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+                    JSONArray hTime = hourlyObj.getJSONArray("time");
+                    JSONArray hTemp = hourlyObj.getJSONArray("temperature_2m");
+                    JSONArray hCode = hourlyObj.optJSONArray("weather_code");
+                    JSONArray hUv = hourlyObj.optJSONArray("uv_index");
+                    JSONArray hRain = hourlyObj.optJSONArray("precipitation_probability");
+                    int nowH = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+                    int startIdx = 0;
 
-                    // Trova ora corrente e estrae UV/Pioggia
                     for(int i=0; i<hTime.length(); i++) {
-                        String t=hTime.getString(i);
-                        int h=Integer.parseInt(t.substring(11,13));
-                        if(h==nowH) {
-                            startIdx=i;
-                            currentUv=(hUv!=null && i<hUv.length())?hUv.optInt(i,0):0;
-                            currentRain=(hRain!=null && i<hRain.length())?hRain.optInt(i,0):0;
+                        String t = hTime.getString(i);
+                        int h = Integer.parseInt(t.substring(11,13));
+                        if(h == nowH) {
+                            startIdx = i;
+                            currentUv = (hUv!=null && i<hUv.length()) ? hUv.optInt(i,0) : 0;
+                            currentRain = (hRain!=null && i<hRain.length()) ? hRain.optInt(i,0) : 0;
                             break;
                         }
                     }
 
                     if(weatherDetails!=null) {
-                        weatherDetails.setText("💨 "+cur.optString("wind_speed_10m","?")+" km/h "+wind+" | 💧 "+cur.optString("relative_humidity_2m","?")+"% | ☀UV:"+currentUv+" | 🌧"+currentRain+"%");
+                        weatherDetails.setText("💨 "+windSpeed+" km/h "+windDir+" | 💧 "+cur.optString("relative_humidity_2m","?")+"% | ☀UV:"+currentUv+" | 🌧"+currentRain+"%");
                     }
                     if(weatherSunTimes!=null) {
                         weatherSunTimes.setText("🌅 "+sunriseStr+" | 🌇 "+sunsetStr);
@@ -499,7 +502,7 @@ public class MainActivity extends Activity {
                         for(int i=startIdx; i<hTime.length() && count<13; i++) {
                             String t=hTime.getString(i);
                             int h=Integer.parseInt(t.substring(11,13));
-                            if(h>23) break; // Stop a fine giornata
+                            if(h>23) break; 
                             int temp=(int)Math.round(hTemp.getDouble(i));
                             int wCode=0;
                             if(hCode!=null && i<hCode.length()) wCode=hCode.optInt(i,0);
