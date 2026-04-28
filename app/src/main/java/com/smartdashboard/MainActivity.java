@@ -23,7 +23,6 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -265,13 +264,13 @@ public class MainActivity extends Activity {
         @Override public int getCount() { return todos.size(); } @Override public Object getItem(int p) { return todos.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(8,6,8,6); row.setBackgroundColor(Color.parseColor("#1A1A1A"));
-            Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(18); cBtn.setWidth(40); cBtn.setHeight(40); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
+            Button cBtn = new Button(MainActivity.this); cBtn.setText(todos.get(pos).done?"✓":"○"); cBtn.setTextSize(16); cBtn.setWidth(38); cBtn.setHeight(38); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { todos.get(pos).done = !todos.get(pos).done; saveData(); todoAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
-            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END);
-            tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(13); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
+            tv.setMaxLines(3); tv.setSingleLine(false); // ✅ VA A CAPO, NO TRONCAMENTO
+            tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(12); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(16); dBtn.setWidth(36); dBtn.setHeight(36); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
+            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(34); dBtn.setHeight(34); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos;
             dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ todos.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
@@ -281,13 +280,13 @@ public class MainActivity extends Activity {
         @Override public int getCount() { return dayEvents.size(); } @Override public Object getItem(int p) { return dayEvents.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
             LinearLayout row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(6,4,6,4); row.setBackgroundColor(Color.parseColor("#222222"));
-            Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(14); cBtn.setWidth(34); cBtn.setHeight(34); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
+            Button cBtn = new Button(MainActivity.this); cBtn.setText(dayEvents.get(pos).done?"✓":"○"); cBtn.setTextSize(13); cBtn.setWidth(32); cBtn.setHeight(32); cBtn.setBackgroundColor(Color.parseColor("#333333")); cBtn.setTextColor(Color.parseColor("#D4AF37")); cBtn.setGravity(Gravity.CENTER);
             cBtn.setOnClickListener(v -> runOnUiThread(() -> { dayEvents.get(pos).done = !dayEvents.get(pos).done; saveData(); dayEventsAdapter.notifyDataSetChanged(); }));
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
-            tv.setMaxLines(1); tv.setEllipsize(TextUtils.TruncateAt.END);
+            tv.setMaxLines(3); tv.setSingleLine(false); // ✅ VA A CAPO, NO TRONCAMENTO
             tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(11); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(4,0,4,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(30); dBtn.setHeight(30); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
+            Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(13); dBtn.setWidth(30); dBtn.setHeight(30); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final int finalPos = pos; final String finalDate = selectedDate;
             dBtn.setOnClickListener(v -> new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",(d,w)->runOnUiThread(()->{ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } })).setNegativeButton("No",null).show());
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
@@ -316,14 +315,14 @@ public class MainActivity extends Activity {
     private class CalendarAdapter extends BaseAdapter {
         @Override public int getCount() { return 42; } @Override public Object getItem(int p) { return null; } @Override public long getItemId(int p) { return 0; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
-            final LinearLayout cell = new LinearLayout(MainActivity.this); cell.setOrientation(LinearLayout.VERTICAL); cell.setGravity(Gravity.CENTER); cell.setPadding(2,3,2,3); cell.setBackgroundColor(Color.parseColor("#1A1A1A")); cell.setClickable(true); cell.setFocusable(true);
+            final LinearLayout cell = new LinearLayout(MainActivity.this); cell.setOrientation(LinearLayout.VERTICAL); cell.setGravity(Gravity.CENTER); cell.setPadding(1,2,1,2); cell.setBackgroundColor(Color.parseColor("#1A1A1A")); cell.setClickable(true); cell.setFocusable(true);
             try {
                 Calendar cal = (Calendar) currentCal.clone(); cal.set(Calendar.DAY_OF_MONTH, 1);
                 int firstDay = cal.get(Calendar.DAY_OF_WEEK); int offset = (firstDay==Calendar.SUNDAY)?6:firstDay-2; int dayNum = pos-offset+1;
                 cal.add(Calendar.DAY_OF_MONTH, pos-offset); final String key = new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(cal.getTime());
                 boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
-                TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
-                TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
+                TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(14); tv.setTextColor(Color.parseColor("#CCCCCC"));
+                TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(8); dot.setTextColor(Color.parseColor("#D4AF37"));
                 if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#050505")); cell.setEnabled(false); }
                 else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
                 cell.setOnClickListener(v -> { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }); cell.addView(tv); cell.addView(dot);
@@ -339,19 +338,19 @@ public class MainActivity extends Activity {
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String ic="☀"; if(code.contains("nuvol")||code.contains("cloud")) ic="☁"; else if(code.contains("piogg")||code.contains("rain")) ic="🌧";
                 if(weatherIcon!=null) weatherIcon.setText(ic); if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
-                // ✅ Previsioni ORIZZONTALI compatte (Fix API 14)
+                // ✅ PREVISIONI A DESTRA, COMPATTE E PICCOLE
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=0;i<Math.min(7,w.length());i++) {
                         JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
                         String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(6,3,6,3);
-                        item.setLayoutParams(new LinearLayout.LayoutParams(60, LinearLayout.LayoutParams.WRAP_CONTENT)); // ✅ Sostituisce setMinWidth per API 14
+                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(4,2,4,2);
+                        item.setLayoutParams(new LinearLayout.LayoutParams(48, LinearLayout.LayoutParams.WRAP_CONTENT));
                         item.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
-                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(9);
+                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(8);
                         String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
-                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
-                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
+                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(10);
+                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(9);
                         item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
                         forecastContainer.addView(item);
                     }
