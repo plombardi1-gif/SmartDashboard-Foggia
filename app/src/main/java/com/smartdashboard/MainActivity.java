@@ -80,7 +80,6 @@ public class MainActivity extends Activity {
     private boolean isCharging = false;
     private static final int VOICE_REQ = 1001;
     private static final int CAMERA_REQ = 1002;
-    // ✅ State affidabile per espansione (risolve recycling ListView)
     private HashMap<Integer, Boolean> expandedNotes = new HashMap<Integer, Boolean>();
     private HashMap<Integer, Boolean> expandedEvents = new HashMap<Integer, Boolean>();
 
@@ -145,6 +144,7 @@ public class MainActivity extends Activity {
         } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
+    // ✅ FIX TEMALUMINOSITA: Separati e stabili
     private void applyTheme() {
         try {
             String theme = prefs.getString("theme", "classic");
@@ -267,12 +267,20 @@ public class MainActivity extends Activity {
             .setNegativeButton("Chiudi", null).show();
     }
 
+    // ✅ FIX LUMINOSITA: Stabile su API 14
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
-        final SeekBar bar = new SeekBar(this); bar.setMax(255); bar.setProgress((int)(lp.screenBrightness * 255));
+        final SeekBar bar = new SeekBar(this); bar.setMax(255); 
+        int current = (lp.screenBrightness < 0) ? 128 : (int)(lp.screenBrightness * 255);
+        bar.setProgress(current);
         new AlertDialog.Builder(this).setTitle("Luminosità").setView(bar)
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { try { lp.screenBrightness = bar.getProgress() / 255f; getWindow().setAttributes(lp); } catch(Exception e) {} } })
-            .setNegativeButton("Auto", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { lp.screenBrightness = -1; getWindow().setAttributes(lp); } }).show();
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
+                lp.screenBrightness = bar.getProgress() / 255f; 
+                getWindow().setAttributes(lp); 
+            }})
+            .setNegativeButton("Auto", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
+                lp.screenBrightness = -1; getWindow().setAttributes(lp); 
+            }}).show();
     }
 
     private void adjustVolume() {
@@ -280,7 +288,7 @@ public class MainActivity extends Activity {
         int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         final SeekBar bar = new SeekBar(this); bar.setMax(max); bar.setProgress(am.getStreamVolume(AudioManager.STREAM_MUSIC));
         new AlertDialog.Builder(this).setTitle("Volume").setView(bar)
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { try { am.setStreamVolume(AudioManager.STREAM_MUSIC, bar.getProgress(), 0); } catch(Exception e) {} } }).show();
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { am.setStreamVolume(AudioManager.STREAM_MUSIC, bar.getProgress(), 0); } }).show();
     }
 
     private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
@@ -299,8 +307,6 @@ public class MainActivity extends Activity {
             if(!dir.exists()) dir.mkdirs();
             File file = new File(dir, "IMG_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".jpg");
             intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(file));
-            intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
-            intent.putExtra("return-data", false);
             startActivityForResult(intent, CAMERA_REQ);
         } catch(Exception e) { showAlert("Camera", "Impossibile avviare fotocamera."); }
     }
@@ -345,7 +351,6 @@ public class MainActivity extends Activity {
     }
     private void setupAdapters() { todoAdapter = new TodoAdapter(); dayEventsAdapter = new DayEventsAdapter(); if(todoList!=null) todoList.setAdapter(todoAdapter); if(dayEventsList!=null) dayEventsList.setAdapter(dayEventsAdapter); }
 
-    // ✅ Adapter Note con espansione affidabile
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos.size(); } @Override public Object getItem(int p) { return todos.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
@@ -356,8 +361,7 @@ public class MainActivity extends Activity {
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
             final int finalPos = pos;
             boolean exp = expandedNotes.containsKey(finalPos) && expandedNotes.get(finalPos);
-            tv.setMaxLines(exp ? 0 : 2);
-            tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
+            tv.setMaxLines(exp ? 0 : 2); tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
             tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(12); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             tv.setFocusable(false); tv.setClickable(true);
@@ -369,7 +373,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ✅ Adapter Eventi con espansione affidabile
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents.size(); } @Override public Object getItem(int p) { return dayEvents.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
@@ -380,8 +383,7 @@ public class MainActivity extends Activity {
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
             final int finalPos = pos;
             boolean exp = expandedEvents.containsKey(finalPos) && expandedEvents.get(finalPos);
-            tv.setMaxLines(exp ? 0 : 2);
-            tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
+            tv.setMaxLines(exp ? 0 : 2); tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
             tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(11); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(4,0,4,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
             tv.setFocusable(false); tv.setClickable(true);
@@ -450,12 +452,11 @@ public class MainActivity extends Activity {
                     for(int i=1; i<w.length(); i++) {
                         JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
                         String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(4,2,4,2);
-                        item.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(8);
+                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
+                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(9);
                         String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
-                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(10);
-                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(9);
+                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
+                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
                         item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
                         forecastContainer.addView(item);
                     }
