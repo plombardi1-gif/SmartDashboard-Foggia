@@ -26,7 +26,6 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;
-import android.util.SparseBooleanArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,8 +80,9 @@ public class MainActivity extends Activity {
     private boolean isCharging = false;
     private static final int VOICE_REQ = 1001;
     private static final int CAMERA_REQ = 1002;
-    private SparseBooleanArray expandedNotes = new SparseBooleanArray();
-    private SparseBooleanArray expandedEvents = new SparseBooleanArray();
+    // ✅ State affidabile per espansione (risolve recycling ListView)
+    private HashMap<Integer, Boolean> expandedNotes = new HashMap<Integer, Boolean>();
+    private HashMap<Integer, Boolean> expandedEvents = new HashMap<Integer, Boolean>();
 
     static class TodoItem { String text; boolean done; TodoItem(String t, boolean d) { text=t; done=d; } }
     static class EventItem { String time, desc; boolean done; EventItem(String t, String d, boolean done) { time=t; desc=d; this.done=done; } String display() { return (time.isEmpty()?"":time+" - ")+desc; } }
@@ -168,7 +168,6 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
-    // ✅ FEATURE 4: Auto-Tema Solare per Foggia (41.46°N, 15.54°E)
     private void applyThemeByTime() {
         try {
             long[] sunTimes = getSunTimesFoggia();
@@ -188,7 +187,6 @@ public class MainActivity extends Activity {
             double M = (357.529 + 0.98560028*n) % 360.0;
             double C = 1.9148*Math.sin(M*Math.PI/180) + 0.01999*Math.sin(2*M*Math.PI/180) + 0.00029*Math.sin(3*M*Math.PI/180);
             double lambda = (M + 102.9372 + C) % 360.0;
-            // ✅ FIX LOGICA: Calcolo corretto di T (secoli juliiani)
             double T = n / 36525.0;
             double omega = 125.04 - 1934.136 * T;
             double lon = lambda + 0.00569 + 0.00478*Math.sin(omega*Math.PI/180);
@@ -200,7 +198,6 @@ public class MainActivity extends Activity {
             double H = Math.acos(cosH)*180.0/Math.PI;
             double eqt = 4.0*(C - 0.00571*Math.sin(2*lambda*Math.PI/180) - 0.00196*Math.sin(4*lambda*Math.PI/180) - 0.00002*Math.sin(6*lambda*Math.PI/180));
             double tz = 1.0;
-            // ✅ FIX COMPILAZIONE: Cast esplicito da double a long
             long sunrise = (long) ((720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) - eqt - tz*60)*60000);
             long sunset = (long) ((720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) + eqt + tz*60)*60000);
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
@@ -270,7 +267,6 @@ public class MainActivity extends Activity {
             .setNegativeButton("Chiudi", null).show();
     }
 
-    // ✅ FEATURE 3: Slider Luminosità & Volume
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
         final SeekBar bar = new SeekBar(this); bar.setMax(255); bar.setProgress((int)(lp.screenBrightness * 255));
@@ -296,7 +292,6 @@ public class MainActivity extends Activity {
 
     private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
     
-    // ✅ FEATURE 1: Scatto Veloce
     private void takePhoto() {
         try {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -350,6 +345,7 @@ public class MainActivity extends Activity {
     }
     private void setupAdapters() { todoAdapter = new TodoAdapter(); dayEventsAdapter = new DayEventsAdapter(); if(todoList!=null) todoList.setAdapter(todoAdapter); if(dayEventsList!=null) dayEventsList.setAdapter(dayEventsAdapter); }
 
+    // ✅ Adapter Note con espansione affidabile
     private class TodoAdapter extends BaseAdapter {
         @Override public int getCount() { return todos.size(); } @Override public Object getItem(int p) { return todos.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
@@ -359,19 +355,21 @@ public class MainActivity extends Activity {
             
             TextView tv = new TextView(MainActivity.this); tv.setText(todos.get(pos).text);
             final int finalPos = pos;
-            boolean exp = expandedNotes.get(pos, false);
+            boolean exp = expandedNotes.containsKey(finalPos) && expandedNotes.get(finalPos);
             tv.setMaxLines(exp ? 0 : 2);
             tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
             tv.setTextColor(todos.get(pos).done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(12); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(6,0,6,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            tv.setFocusable(false); tv.setClickable(true);
             tv.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { expandedNotes.put(finalPos, !exp); runOnUiThread(new Runnable() { public void run() { todoAdapter.notifyDataSetChanged(); } }); }});
             
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(14); dBtn.setWidth(32); dBtn.setHeight(32); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
-            dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ todos.remove(finalPos); expandedNotes.delete(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); }}); }}).setNegativeButton("No",null).show(); }});
+            dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina Nota").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ todos.remove(finalPos); expandedNotes.remove(finalPos); saveData(); todoAdapter.notifyDataSetChanged(); }}); }}).setNegativeButton("No",null).show(); }});
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
         }
     }
 
+    // ✅ Adapter Eventi con espansione affidabile
     private class DayEventsAdapter extends BaseAdapter {
         @Override public int getCount() { return dayEvents.size(); } @Override public Object getItem(int p) { return dayEvents.get(p); } @Override public long getItemId(int p) { return p; }
         @Override public View getView(final int pos, View cv, ViewGroup parent) {
@@ -381,16 +379,17 @@ public class MainActivity extends Activity {
             
             TextView tv = new TextView(MainActivity.this); EventItem evt = dayEvents.get(pos); tv.setText(evt.display());
             final int finalPos = pos;
-            boolean exp = expandedEvents.get(pos, false);
+            boolean exp = expandedEvents.containsKey(finalPos) && expandedEvents.get(finalPos);
             tv.setMaxLines(exp ? 0 : 2);
             tv.setEllipsize(exp ? null : TextUtils.TruncateAt.END);
             tv.setTextColor(evt.done?Color.parseColor("#666666"):Color.parseColor("#FFFFFF")); tv.setTextSize(11); tv.setGravity(Gravity.CENTER_VERTICAL); tv.setPadding(4,0,4,0);
             tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            tv.setFocusable(false); tv.setClickable(true);
             tv.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { expandedEvents.put(finalPos, !exp); runOnUiThread(new Runnable() { public void run() { dayEventsAdapter.notifyDataSetChanged(); } }); }});
             
             Button dBtn = new Button(MainActivity.this); dBtn.setText("✕"); dBtn.setTextSize(13); dBtn.setWidth(28); dBtn.setHeight(28); dBtn.setBackgroundColor(Color.parseColor("#8B0000")); dBtn.setTextColor(Color.WHITE); dBtn.setGravity(Gravity.CENTER);
             final String finalDate = selectedDate;
-            dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; expandedEvents.delete(finalPos); saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } }}); }}).setNegativeButton("No",null).show(); }});
+            dBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { new AlertDialog.Builder(MainActivity.this).setTitle("Elimina").setMessage("Sei sicuro?").setPositiveButton("Sì",new DialogInterface.OnClickListener(){ public void onClick(DialogInterface d, int w){ runOnUiThread(new Runnable(){ public void run(){ if(finalDate!=null && eventsByDate.containsKey(finalDate)) { ArrayList<EventItem> list = eventsByDate.get(finalDate); if(finalPos >= 0 && finalPos < list.size()) list.remove(finalPos); dayEvents = list; expandedEvents.remove(finalPos); saveData(); dayEventsAdapter.notifyDataSetChanged(); if(calendarAdapter != null) calendarAdapter.notifyDataSetChanged(); if(dayEvents.isEmpty() && dayEventsPanel != null) dayEventsPanel.setVisibility(View.GONE); } }}); }}).setNegativeButton("No",null).show(); }});
             row.addView(cBtn); row.addView(tv); row.addView(dBtn); return row;
         }
     }
@@ -445,15 +444,15 @@ public class MainActivity extends Activity {
                 String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String ic="☀"; if(code.contains("nuvol")||code.contains("cloud")) ic="☁"; else if(code.contains("piogg")||code.contains("rain")) ic="🌧";
                 if(weatherIcon!=null) weatherIcon.setText(ic); if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
+                // ✅ PREVISIONI COMPATTE, STILE METEO CORRENTE, TUTTI I GIORNI DISPONIBILI
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
-                    for(int i=1;i<Math.min(8,w.length());i++) {
+                    for(int i=1; i<w.length(); i++) {
                         JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
                         String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(5,2,5,2);
-                        item.setLayoutParams(new LinearLayout.LayoutParams(44, LinearLayout.LayoutParams.WRAP_CONTENT));
-                        item.setBackgroundColor(i%2==0?Color.parseColor("#1A1A1A"):Color.parseColor("#222222"));
-                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#D4AF37")); tvDay.setTextSize(8);
+                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(4,2,4,2);
+                        item.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(8);
                         String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
                         TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(10);
                         TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(9);
