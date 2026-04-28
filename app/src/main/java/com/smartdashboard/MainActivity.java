@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
     private TextView calendarMonth, selectedDayTitle;
     private GridView calendarGrid;
     private ListView todoList, dayEventsList;
-    private LinearLayout dayEventsPanel, forecastContainer, weatherForecastRow;
+    private LinearLayout dayEventsPanel, forecastContainer, weatherForecastRow, rootLayout;
     private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather, btnQuickControls, btnVoice, btnCamera;
     private Handler clockHandler, weatherHandler, statsHandler;
     private SharedPreferences prefs;
@@ -98,6 +98,7 @@ public class MainActivity extends Activity {
             setContentView(R.layout.activity_main);
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
+            rootLayout = (LinearLayout) findViewById(R.id.rootLayout);
             clockText = (TextView) findViewById(R.id.clock); dateText = (TextView) findViewById(R.id.date); smartHomeText = (TextView) findViewById(R.id.smartHomeText);
             batteryText = (TextView) findViewById(R.id.batteryText); weatherIcon = (TextView) findViewById(R.id.weatherIcon); weatherTemp = (TextView) findViewById(R.id.weatherTemp);
             weatherDesc = (TextView) findViewById(R.id.weatherDesc); weatherWind = (TextView) findViewById(R.id.weatherWind); calendarMonth = (TextView) findViewById(R.id.calendarMonth);
@@ -110,7 +111,7 @@ public class MainActivity extends Activity {
 
             prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
             validateAndLoadPrefs();
-            applyTheme();
+            applyTheme(); // ✅ Applica tema subito all'avvio
             loadData(); setupAdapters(); registerBatteryReceiver();
             currentCal = Calendar.getInstance(); calendarAdapter = new CalendarAdapter();
             if(calendarGrid != null) { calendarGrid.setAdapter(calendarAdapter); updateCalendarDisplay(); }
@@ -130,7 +131,6 @@ public class MainActivity extends Activity {
             if(clockText != null) clockText.setOnLongClickListener(new View.OnLongClickListener() { public boolean onLongClick(View v) { showSettingsMenu(); return true; } });
 
             setupFullScreen();
-            applyThemeByTime();
         } catch(Exception e) {
             e.printStackTrace();
             showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage());
@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
         } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
-    // ✅ FIX TEMA: Lettura centralizzata, applica sfondo root
+    // ✅ FIX TEMA: Applica direttamente su rootLayout, non su getRootView()
     private void applyTheme() {
         try {
             String theme = prefs.getString("theme", "auto");
@@ -153,8 +153,7 @@ public class MainActivity extends Activity {
             else if("ocean".equals(theme)) bg = Color.parseColor("#0A1A2A");
             else if("classic".equals(theme)) bg = Color.parseColor("#000000");
             else bg = 0xFF000000;
-            View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) root.setBackgroundColor(bg);
+            if(rootLayout != null) rootLayout.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -166,10 +165,6 @@ public class MainActivity extends Activity {
             decor.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
                 public void onSystemUiVisibilityChange(int visibility) { if (visibility == 0) decor.setSystemUiVisibility(uiFlags); }
             });
-            View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) { root.setSystemUiVisibility(uiFlags); root.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-                public void onSystemUiVisibilityChange(int visibility) { if (visibility == 0) root.setSystemUiVisibility(uiFlags); }
-            }); }
         } catch(Exception ignored) {}
     }
 
@@ -177,14 +172,13 @@ public class MainActivity extends Activity {
     private void applyThemeByTime() {
         try {
             String theme = prefs.getString("theme", "auto");
-            if(!"auto".equals(theme)) return; // Tema manuale selezionato: esci subito
+            if(!"auto".equals(theme)) return; // Tema manuale: esci subito
 
             long[] sunTimes = getSunTimesFoggia();
             long now = System.currentTimeMillis();
             boolean isDay = now > sunTimes[0] && now < sunTimes[1];
             int bg = isDay ? (hourBetween(12, 18) ? 0xFF120A1A : 0xFF0A0A1A) : 0xFF050510;
-            View root = findViewById(android.R.id.content).getRootView();
-            if(root != null) root.setBackgroundColor(bg);
+            if(rootLayout != null) rootLayout.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -298,7 +292,7 @@ public class MainActivity extends Activity {
     private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
     private void toggleBluetooth() { try { BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter(); if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); } } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare."); } }
     
-    // ✅ FIX TEMA: Salva prefs, applica subito, aggiorna UI
+    // ✅ FIX TEMA: Salva, applica subito, forza refresh UI
     private void showThemeSelector() {
         final String[] themes = {"🌅 Auto Solare", "🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
         final String[] keys = {"auto", "classic", "night", "ocean"};
@@ -441,7 +435,6 @@ public class MainActivity extends Activity {
                 boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
                 TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
                 TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
-                // ✅ FIX QUADRATI NERI: Trasparente totale, disabilitato
                 if(dayNum<1 || dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isMonth) { 
                     tv.setText(""); dot.setText(""); 
                     cell.setBackgroundColor(Color.TRANSPARENT); 
@@ -467,22 +460,31 @@ public class MainActivity extends Activity {
                 if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); 
                 if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
-                // ✅ FIX EMOJI PREVISIONI: Mappatura corretta per ogni giorno
+                // ✅ FIX EMOJI PREVISIONI: Parsing robusto, fallback, layout corretto
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=1; i<w.length(); i++) {
-                        JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
-                        String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
-                        LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
-                        TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(9);
-                        
-                        String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
-                        String wi = getWeatherEmoji(wd);
-                        
-                        TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
-                        TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
-                        item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
-                        forecastContainer.addView(item);
+                        try {
+                            JSONObject d=w.getJSONObject(i); String ds=d.getString("date"); Calendar c=Calendar.getInstance(); c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).parse(ds));
+                            String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
+                            LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
+                            TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(9);
+                            
+                            JSONArray hourly = d.getJSONArray("hourly");
+                            String wd = "clear";
+                            String temp = "?";
+                            if(hourly.length() > 6) {
+                                JSONObject h6 = hourly.getJSONObject(6);
+                                try { wd = h6.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); } catch(Exception ignored) {}
+                                try { temp = h6.getString("tempC")+"°"; } catch(Exception ignored) {}
+                            }
+                            String wi = getWeatherEmoji(wd);
+                            
+                            TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
+                            TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(temp); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
+                            item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
+                            forecastContainer.addView(item);
+                        } catch(Exception ignored) {}
                     }
                 }
             } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
