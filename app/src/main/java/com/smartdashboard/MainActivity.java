@@ -1,6 +1,7 @@
 package com.smartdashboard;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -35,6 +36,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -52,7 +54,7 @@ public class MainActivity extends Activity {
     private ListView todoList, dayEventsList;
     private LinearLayout dayEventsPanel, forecastContainer;
     private Button btnAddEvt, btnAddTodo, btnPrevMonth, btnNextMonth, btnRefreshWeather;
-    private Handler clockHandler, weatherHandler;
+    private Handler clockHandler, weatherHandler, statsHandler;
     private SharedPreferences prefs;
     private ArrayList<TodoItem> todos;
     private ArrayList<EventItem> dayEvents;
@@ -79,6 +81,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setupFullScreen();
+        applyThemeByTime();
 
         try {
             clockText = findViewById(R.id.clock); dateText = findViewById(R.id.date); smartHomeText = findViewById(R.id.smartHomeText);
@@ -93,7 +96,8 @@ public class MainActivity extends Activity {
             currentCal = Calendar.getInstance(); calendarAdapter = new CalendarAdapter();
             if(calendarGrid != null) { calendarGrid.setAdapter(calendarAdapter); updateCalendarDisplay(); }
             clockHandler = new Handler(Looper.getMainLooper()); weatherHandler = new Handler(Looper.getMainLooper());
-            startClock(); loadWeather(); startWeatherRefresh();
+            statsHandler = new Handler(Looper.getMainLooper());
+            startClock(); loadWeather(); startWeatherRefresh(); startStatsUpdater();
 
             btnAddEvt.setOnClickListener(v -> showAddEventDialog(selectedDate));
             btnAddTodo.setOnClickListener(v -> showAddTodoDialog());
@@ -108,9 +112,17 @@ public class MainActivity extends Activity {
         View decor = getWindow().getDecorView();
         int uiFlags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decor.setSystemUiVisibility(uiFlags);
-        decor.setOnSystemUiVisibilityChangeListener(visibility -> {
-            if (visibility == 0) decor.setSystemUiVisibility(uiFlags);
-        });
+        decor.setOnSystemUiVisibilityChangeListener(visibility -> { if (visibility == 0) decor.setSystemUiVisibility(uiFlags); });
+    }
+
+    private void applyThemeByTime() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        int bgColor = 0;
+        if (hour >= 22 || hour < 6) bgColor = Color.parseColor("#050510");      // Notte profonda
+        else if (hour >= 6 && hour < 12) bgColor = Color.parseColor("#0a0a1a");  // Mattina
+        else if (hour >= 12 && hour < 18) bgColor = Color.parseColor("#120a1a"); // Pomeriggio caldo
+        else bgColor = Color.parseColor("#0a0f1a");                             // Tramonto/Sera
+        findViewById(android.R.id.content).getRootView().setBackgroundColor(bgColor);
     }
 
     private void registerBatteryReceiver() {
@@ -121,6 +133,52 @@ public class MainActivity extends Activity {
             } catch(Exception ignored) {}
         };
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+    }
+
+    private void startStatsUpdater() {
+        Runnable statsRunnable = new Runnable() {
+            @Override public void run() {
+                updateSystemStats();
+                statsHandler.postDelayed(this, 5000); // Aggiorna ogni 5 secondi
+            }
+        };
+        statsHandler.post(statsRunnable);
+    }
+
+    private void updateSystemStats() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+            am.getMemoryInfo(memInfo);
+            long total = memInfo.totalMem, avail = memInfo.availMem;
+            int ramPct = (int) ((total - avail) * 100 / total);
+            int cpuPct = readCpuUsage();
+
+            runOnUiThread(() -> {
+                if(batteryText != null) {
+                    String base = batteryText.getText().toString();
+                    batteryText.setText(base + " | 📊RAM:" + ramPct + "% ⚡CPU:" + cpuPct + "%");
+                }
+            });
+        } catch(Exception e) {}
+    }
+
+    private int readCpuUsage() {
+        try {
+            BufferedReader r1 = new BufferedReader(new FileReader("/proc/stat"));
+            String l1 = r1.readLine(); r1.close();
+            String[] t1 = l1.split("\\s+");
+            long u1=Long.parseLong(t1[1]), n1=Long.parseLong(t1[2]), s1=Long.parseLong(t1[3]), i1=Long.parseLong(t1[4]);
+            long tot1 = u1+n1+s1+i1;
+            try { Thread.sleep(500); } catch(InterruptedException e) {}
+            BufferedReader r2 = new BufferedReader(new FileReader("/proc/stat"));
+            String l2 = r2.readLine(); r2.close();
+            String[] t2 = l2.split("\\s+");
+            long u2=Long.parseLong(t2[1]), n2=Long.parseLong(t2[2]), s2=Long.parseLong(t2[3]), i2=Long.parseLong(t2[4]);
+            long tot2 = u2+n2+s2+i2;
+            long dTot = tot2-tot1, dIdle = i2-i1;
+            return (dTot==0) ? 0 : Math.min(100, Math.max(0, (int)((dTot-dIdle)*100/dTot)));
+        } catch(Exception e) { return 0; }
     }
 
     private void showSettingsMenu() {
@@ -234,7 +292,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void startClock() { clockHandler.postDelayed(()->{ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); clockHandler.postDelayed(this::startClock,1000); } catch(Exception ignored) {} },1000); }
+    private void startClock() { clockHandler.postDelayed(()->{ try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this::startClock,1000); } catch(Exception ignored) {} },1000); }
 
     private void loadWeather() {
         new AsyncTask<Void,Void,String>() { @Override protected String doInBackground(Void... p) { try { HttpURLConnection c=(HttpURLConnection)new URL("http://wttr.in/Foggia,Italy?format=j1&lang=it").openConnection(); c.setRequestMethod("GET"); c.setConnectTimeout(5000); BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream())); StringBuilder s=new StringBuilder(); String l; while((l=r.readLine())!=null) s.append(l); r.close(); return s.toString(); } catch(Exception e) { return "ERRORE"; }}
@@ -257,7 +315,7 @@ public class MainActivity extends Activity {
 
     private void startWeatherRefresh() { weatherHandler.postDelayed(()->{ loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh,1800000); },1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
-    @Override protected void onResume() { super.onResume(); setupFullScreen(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); }
-    @Override protected void onPause() { super.onPause(); if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); }
+    @Override protected void onResume() { super.onResume(); setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); }
+    @Override protected void onPause() { super.onPause(); if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); statsHandler.removeCallbacksAndMessages(null); }
     @Override protected void onDestroy() { super.onDestroy(); try { unregisterReceiver(batteryReceiver); } catch(Exception ignored) {} }
 }
