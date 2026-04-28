@@ -462,7 +462,8 @@ public class MainActivity extends Activity {
                         try {
                             JSONArray hTime=hourlyObj.getJSONArray("time");
                             JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
-                            JSONArray hCode=hourlyObj.getJSONArray("weather_code");
+                            // ✅ FIX: uso optJSONArray e controllo lunghezza per evitare IndexOutOfBounds
+                            JSONArray hCode=hourlyObj.optJSONArray("weather_code");
                             int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                             int count=0;
                             for(int i=0; i<hTime.length() && count<9; i++) {
@@ -470,7 +471,10 @@ public class MainActivity extends Activity {
                                 int h=Integer.parseInt(t.substring(11,13));
                                 if(h>=nowH-1) {
                                     int temp=(int)Math.round(hTemp.getDouble(i));
-                                    int wCode=hCode.optInt(i,0);
+                                    int wCode=0;
+                                    if(hCode!=null && i<hCode.length()) {
+                                        wCode=hCode.optInt(i, 0);
+                                    }
                                     LinearLayout item=new LinearLayout(MainActivity.this); 
                                     item.setOrientation(LinearLayout.VERTICAL); 
                                     item.setGravity(Gravity.CENTER); 
