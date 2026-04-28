@@ -24,6 +24,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -474,9 +475,9 @@ public class MainActivity extends Activity {
                                     item.setOrientation(LinearLayout.VERTICAL); 
                                     item.setGravity(Gravity.CENTER); 
                                     item.setPadding(0,0,8,0);
-                                    TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(11);
-                                    TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(14);
-                                    TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(10);
+                                    TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+                                    TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+                                    TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
                                     item.addView(tvH); item.addView(tvI); item.addView(tvT);
                                     hourlyContainer.addView(item);
                                     count++;
@@ -493,17 +494,37 @@ public class MainActivity extends Activity {
     }
 
     private String getWeatherEmoji(int code) {
-        if(code<=1) return "☀"; if(code<=2) return "🌤"; if(code<=3) return "☁";
-        if(code<=48) return "🌫"; if(code<=55) return "🌧"; if(code<=65) return "🌧";
-        if(code<=75) return "❄"; if(code<=79) return "❄"; if(code<=82) return "🌧";
-        if(code<=86) return "❄"; if(code<=95) return "⛈"; if(code<=99) return "⛈";
+        if(code==0) return "☀";
+        if(code==1) return "🌤";
+        if(code==2) return "🌤";
+        if(code==3) return "☁";
+        if(code==45||code==48) return "🌫";
+        if(code==51||code==53||code==55) return "🌧";
+        if(code==56||code==57) return "❄";
+        if(code==61||code==63||code==65) return "🌧";
+        if(code==66||code==67) return "❄";
+        if(code==71||code==73||code==75) return "❄";
+        if(code==77) return "❄";
+        if(code==80||code==81||code==82) return "🌧";
+        if(code==85||code==86) return "❄";
+        if(code==95||code==96||code==99) return "⛈";
         return "🌤";
     }
     private String getWeatherText(int code) {
-        if(code<=1) return "Sereno"; if(code<=2) return "Poco nuvoloso"; if(code<=3) return "Nuvoloso";
-        if(code<=48) return "Nebbia"; if(code<=55) return "Pioggerella"; if(code<=65) return "Pioggia";
-        if(code<=75) return "Neve"; if(code<=79) return "Neve"; if(code<=82) return "Pioggia a rovesci";
-        if(code<=86) return "Neve"; if(code<=95) return "Temporale"; if(code<=99) return "Temporale";
+        if(code==0) return "Sereno";
+        if(code==1) return "Principalmente sereno";
+        if(code==2) return "Parzialmente nuvoloso";
+        if(code==3) return "Nuvoloso";
+        if(code==45||code==48) return "Nebbia";
+        if(code==51||code==53||code==55) return "Pioggerella";
+        if(code==56||code==57) return "Pioggerella ghiacciata";
+        if(code==61||code==63||code==65) return "Pioggia";
+        if(code==66||code==67) return "Pioggia ghiacciata";
+        if(code==71||code==73||code==75) return "Neve";
+        if(code==77) return "Gragnuola";
+        if(code==80||code==81||code==82) return "Rovesci";
+        if(code==85||code==86) return "Nevicate";
+        if(code==95||code==96||code==99) return "Temporale";
         return "Variabile";
     }
     private String getWindDirection(double deg) {
