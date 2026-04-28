@@ -486,9 +486,8 @@ public class MainActivity extends Activity {
 
                                     TextView tvI=new TextView(MainActivity.this); 
                                     String emoji = getWeatherEmoji(wCode);
-                                    if(emoji == null || emoji.isEmpty()) emoji = "\u2600"; // Fallback sole
                                     tvI.setText(emoji); tvI.setTextColor(Color.WHITE); tvI.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-                                    tvI.setGravity(Gravity.CENTER); tvI.setPadding(2,2,2,2); tvI.setIncludeFontPadding(false); tvI.setVisibility(View.VISIBLE);
+                                    tvI.setGravity(Gravity.CENTER); tvI.setPadding(2,2,2,2); tvI.setIncludeFontPadding(false); tvI.setVisibility(View.VISIBLE); tvI.setSingleLine(true);
                                     tvI.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
                                     TextView tvT=new TextView(MainActivity.this); 
@@ -511,22 +510,23 @@ public class MainActivity extends Activity {
         }.execute();
     }
 
+    // ✅ FIX DEFINITIVO: Solo simboli Unicode sicuri per Android 4.0.4 (API 14)
     private String getWeatherEmoji(int code) {
         if(code==0) return "☀";
-        if(code==1) return "🌤";
-        if(code==2) return "🌤";
+        if(code==1) return "⛅";
+        if(code==2) return "⛅";
         if(code==3) return "☁";
-        if(code==45||code==48) return "🌫";
-        if(code==51||code==53||code==55) return "🌧";
+        if(code==45||code==48) return "☁";
+        if(code==51||code==53||code==55) return "☂";
         if(code==56||code==57) return "❄";
-        if(code==61||code==63||code==65) return "🌧";
+        if(code==61||code==63||code==65) return "☂";
         if(code==66||code==67) return "❄";
         if(code==71||code==73||code==75) return "❄";
         if(code==77) return "❄";
-        if(code==80||code==81||code==82) return "🌧";
+        if(code==80||code==81||code==82) return "☂";
         if(code==85||code==86) return "❄";
         if(code==95||code==96||code==99) return "⛈";
-        return "\u2600"; // Fallback universale
+        return "☀";
     }
     private String getWeatherText(int code) {
         if(code==0) return "Sereno";
