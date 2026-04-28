@@ -429,7 +429,9 @@ public class MainActivity extends Activity {
                 JSONObject j=new JSONObject(res);
                 JSONObject cur=j.getJSONObject("current");
                 JSONObject daily=j.getJSONObject("daily");
-                JSONArray hourly=cur.has("hourly")?new JSONArray():j.getJSONArray("hourly");
+                
+                // FIX: hourly è un oggetto JSON, non un array
+                JSONObject hourlyObj = j.getJSONObject("hourly"); 
 
                 int code=cur.optInt("weather_code",0);
                 if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code));
@@ -444,27 +446,14 @@ public class MainActivity extends Activity {
                 // Orario
                 if(hourlyContainer!=null) { hourlyContainer.removeAllViews();
                     try {
-                        JSONArray hTime=hourly.getJSONArray("time");
-                        JSONArray hTemp=hourly.getJSONArray("temperature_2m");
-                        JSONArray hCode=hourly.getJSONArray("weather_code");
+                        JSONArray hTime=hourlyObj.getJSONArray("time");
+                        JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
+                        JSONArray hCode=hourlyObj.getJSONArray("weather_code");
+                        
                         int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                         int count=0;
-                        for(int i=0; i<hTime.length() && count<9; i++) {
-                            String t=hTime.getString(i);
-                            int h=Integer.parseInt(t.substring(11,13));
-                            if(h>=nowH-1) {
-                                int temp=(int)Math.round(hTemp.getDouble(i));
-                                int wCode=hCode.optInt(i,0);
-                                LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,8,0);
-                                TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(11);
-                                TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(14);
-                                TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(10);
-                                item.addView(tvH); item.addView(tvI); item.addView(tvT);
-                                hourlyContainer.addView(item);
-                                count++;
-                            }
-                        }
-                    } catch(Exception ignored) {}
+                        for(int i=0; i
+                        } catch(Exception ignored) {}
                 }
             } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
         } }.execute();
