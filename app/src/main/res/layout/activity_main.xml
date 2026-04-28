@@ -8,7 +8,7 @@
     android:padding="4dp"
     android:weightSum="10">
 
-    <!-- RIGA SUPERIORE: Data/Ora + Meteo Giorno Corrente (22%) -->
+    <!-- RIGA SUPERIORE: Data/Ora + Meteo Dettagliato (22%) -->
     <LinearLayout android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="2.2" android:orientation="horizontal" android:weightSum="10">
         <!-- CARD ORARIO -->
         <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="3.5" android:layout_marginRight="4dp" android:background="@drawable/card" android:orientation="vertical" android:padding="6dp">
@@ -18,26 +18,32 @@
             <TextView android:id="@+id/batteryText" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1" android:text="🔋 100%" android:textSize="8dp" android:textColor="#A0A0A0" android:gravity="center" android:singleLine="true" android:ellipsize="end"/>
         </LinearLayout>
         
-        <!-- CARD METEO (Solo Oggi) -->
-        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="6.5" android:layout_marginLeft="4dp" android:background="@drawable/card_weather" android:orientation="vertical" android:padding="6dp">
-            <!-- Tasto Refresh -->
-            <Button android:id="@+id/btnRefreshWeather" android:text="↻" android:layout_width="28dp" android:layout_height="28dp" android:textSize="12dp" android:background="#333333" android:textColor="#D4AF37" android:gravity="center" android:layout_gravity="right" android:padding="0dp" android:minWidth="28dp" android:minHeight="28dp" android:layout_marginBottom="3dp"/>
+        <!-- CARD METEO (Completamente rivista) -->
+        <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="6.5" android:layout_marginLeft="4dp" android:background="@drawable/card_weather" android:orientation="vertical" android:padding="5dp" android:weightSum="6">
+            <Button android:id="@+id/btnRefreshWeather" android:text="↻" android:layout_width="26dp" android:layout_height="26dp" android:textSize="11dp" android:background="#333333" android:textColor="#D4AF37" android:gravity="center" android:layout_gravity="right" android:minWidth="26dp" android:minHeight="26dp" android:layout_marginBottom="3dp"/>
             
-            <!-- Info Principali: Icona + Temperatura + Condizione -->
-            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1.2" android:gravity="center_vertical" android:paddingBottom="2dp">
-                <TextView android:id="@+id/weatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☀" android:textSize="28dp" android:gravity="center"/>
-                <LinearLayout android:orientation="vertical" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginLeft="10dp" android:gravity="center_vertical">
-                    <TextView android:id="@+id/weatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="23°C" android:textSize="22dp" android:textStyle="bold" android:textColor="#FFFFFF"/>
-                    <TextView android:id="@+id/weatherCondition" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Soleggiato" android:textSize="10dp" android:textColor="#A0A0A0"/>
+            <!-- Principale: Icona + Temp + Condizione -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1.5" android:gravity="center_vertical">
+                <TextView android:id="@+id/weatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☀" android:textSize="26dp"/>
+                <LinearLayout android:orientation="vertical" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginLeft="8dp" android:gravity="center_vertical">
+                    <TextView android:id="@+id/weatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="23°C" android:textSize="20dp" android:textStyle="bold" android:textColor="#FFFFFF"/>
+                    <TextView android:id="@+id/weatherCondition" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Soleggiato" android:textSize="9dp" android:textColor="#A0A0A0"/>
                 </LinearLayout>
             </LinearLayout>
             
-            <!-- Dettagli Orizzontali: Min/Max, Umidità, Vento, Pioggia -->
-            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="0.9" android:gravity="center" android:weightSum="4" android:paddingTop="4dp" android:background="#151515" android:layout_marginTop="2dp">
-                <TextView android:id="@+id/weatherMinMax" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="Min:18° Max:24°" android:textSize="9dp" android:textColor="#D4AF37" android:gravity="center"/>
-                <TextView android:id="@+id/weatherHumidity" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="💧 65%" android:textSize="9dp" android:textColor="#D4AF37" android:gravity="center"/>
-                <TextView android:id="@+id/weatherWind" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="💨 12 km/h" android:textSize="9dp" android:textColor="#D4AF37" android:gravity="center"/>
-                <TextView android:id="@+id/weatherRain" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="🌧 10%" android:textSize="9dp" android:textColor="#D4AF37" android:gravity="center"/>
+            <!-- Orari -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ORARI" android:textSize="7dp" android:textColor="#D4AF37" android:textStyle="bold" android:letterSpacing="0.1"/>
+            <HorizontalScrollView android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1.2" android:scrollbars="none" android:fadeScrollbars="false">
+                <LinearLayout android:id="@+id/hourlyContainer" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="fill_parent" android:gravity="center_vertical"/>
+            </HorizontalScrollView>
+            
+            <!-- Dettagli Specifici -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1.3" android:gravity="center" android:background="#151515" android:weightSum="5">
+                <TextView android:id="@+id/weatherMinMax" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="Min:18° Max:24°" android:textSize="8dp" android:textColor="#D4AF37" android:gravity="center"/>
+                <TextView android:id="@+id/weatherHumidity" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="💧 65%" android:textSize="8dp" android:textColor="#D4AF37" android:gravity="center"/>
+                <TextView android:id="@+id/weatherWind" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="💨 12 km/h" android:textSize="8dp" android:textColor="#D4AF37" android:gravity="center"/>
+                <TextView android:id="@+id/weatherRain" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="🌧 10%" android:textSize="8dp" android:textColor="#D4AF37" android:gravity="center"/>
+                <TextView android:id="@+id/weatherPressure" android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="1" android:text="🌡 1013 mb" android:textSize="8dp" android:textColor="#D4AF37" android:gravity="center"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
