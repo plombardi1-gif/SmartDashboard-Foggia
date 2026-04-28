@@ -462,7 +462,6 @@ public class MainActivity extends Activity {
                         try {
                             JSONArray hTime=hourlyObj.getJSONArray("time");
                             JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m");
-                            // ✅ FIX: uso optJSONArray e controllo lunghezza per evitare IndexOutOfBounds
                             JSONArray hCode=hourlyObj.optJSONArray("weather_code");
                             int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                             int count=0;
@@ -479,9 +478,24 @@ public class MainActivity extends Activity {
                                     item.setOrientation(LinearLayout.VERTICAL); 
                                     item.setGravity(Gravity.CENTER); 
                                     item.setPadding(0,0,8,0);
-                                    TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-                                    TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-                                    TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+
+                                    TextView tvH=new TextView(MainActivity.this); 
+                                    tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+                                    tvH.setGravity(Gravity.CENTER); tvH.setPadding(0,0,0,0); tvH.setIncludeFontPadding(false);
+                                    tvH.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                                    TextView tvI=new TextView(MainActivity.this); 
+                                    String emoji = getWeatherEmoji(wCode);
+                                    if(emoji == null || emoji.isEmpty()) emoji = "\u2600"; // Fallback sole
+                                    tvI.setText(emoji); tvI.setTextColor(Color.WHITE); tvI.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+                                    tvI.setGravity(Gravity.CENTER); tvI.setPadding(2,2,2,2); tvI.setIncludeFontPadding(false); tvI.setVisibility(View.VISIBLE);
+                                    tvI.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                                    TextView tvT=new TextView(MainActivity.this); 
+                                    tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+                                    tvT.setGravity(Gravity.CENTER); tvT.setPadding(0,0,0,0); tvT.setIncludeFontPadding(false);
+                                    tvT.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
                                     item.addView(tvH); item.addView(tvI); item.addView(tvT);
                                     hourlyContainer.addView(item);
                                     count++;
@@ -512,7 +526,7 @@ public class MainActivity extends Activity {
         if(code==80||code==81||code==82) return "🌧";
         if(code==85||code==86) return "❄";
         if(code==95||code==96||code==99) return "⛈";
-        return "🌤";
+        return "\u2600"; // Fallback universale
     }
     private String getWeatherText(int code) {
         if(code==0) return "Sereno";
