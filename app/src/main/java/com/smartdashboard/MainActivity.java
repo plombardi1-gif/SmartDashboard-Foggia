@@ -168,6 +168,7 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
+    // ✅ FEATURE 4: Auto-Tema Solare per Foggia (41.46°N, 15.54°E)
     private void applyThemeByTime() {
         try {
             long[] sunTimes = getSunTimesFoggia();
@@ -187,9 +188,11 @@ public class MainActivity extends Activity {
             double M = (357.529 + 0.98560028*n) % 360.0;
             double C = 1.9148*Math.sin(M*Math.PI/180) + 0.01999*Math.sin(2*M*Math.PI/180) + 0.00029*Math.sin(3*M*Math.PI/180);
             double lambda = (M + 102.9372 + C) % 360.0;
-            double omega = 125.04 - 1934.136*((n+36525*cal.get(Calendar.YEAR))/36525.0);
+            // ✅ FIX LOGICA: Calcolo corretto di T (secoli juliiani)
+            double T = n / 36525.0;
+            double omega = 125.04 - 1934.136 * T;
             double lon = lambda + 0.00569 + 0.00478*Math.sin(omega*Math.PI/180);
-            double e = 23.4393 - 0.0130042*((n+36525*cal.get(Calendar.YEAR))/36525.0);
+            double e = 23.4393 - 0.0130042 * T;
             double decl = Math.asin(Math.sin(e*Math.PI/180)*Math.sin(lon*Math.PI/180))*180.0/Math.PI;
             double lat = 41.46;
             double cosH = (Math.sin(-0.833*Math.PI/180) - Math.sin(lat*Math.PI/180)*Math.sin(decl*Math.PI/180)) / (Math.cos(lat*Math.PI/180)*Math.cos(decl*Math.PI/180));
@@ -197,8 +200,9 @@ public class MainActivity extends Activity {
             double H = Math.acos(cosH)*180.0/Math.PI;
             double eqt = 4.0*(C - 0.00571*Math.sin(2*lambda*Math.PI/180) - 0.00196*Math.sin(4*lambda*Math.PI/180) - 0.00002*Math.sin(6*lambda*Math.PI/180));
             double tz = 1.0;
-            long sunrise = (720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) - eqt - tz*60)*60000;
-            long sunset = (720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) + eqt + tz*60)*60000;
+            // ✅ FIX COMPILAZIONE: Cast esplicito da double a long
+            long sunrise = (long) ((720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) - eqt - tz*60)*60000);
+            long sunset = (long) ((720 - 4*(cal.get(Calendar.DAY_OF_YEAR) - 15) + eqt + tz*60)*60000);
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
             return new long[]{cal.getTimeInMillis() + sunrise, cal.getTimeInMillis() + sunset};
         } catch(Exception e) { return new long[]{0, 86400000L}; }
@@ -266,6 +270,7 @@ public class MainActivity extends Activity {
             .setNegativeButton("Chiudi", null).show();
     }
 
+    // ✅ FEATURE 3: Slider Luminosità & Volume
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
         final SeekBar bar = new SeekBar(this); bar.setMax(255); bar.setProgress((int)(lp.screenBrightness * 255));
@@ -291,6 +296,7 @@ public class MainActivity extends Activity {
 
     private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
     
+    // ✅ FEATURE 1: Scatto Veloce
     private void takePhoto() {
         try {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
