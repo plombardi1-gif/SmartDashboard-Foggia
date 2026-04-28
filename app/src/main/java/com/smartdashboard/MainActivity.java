@@ -144,15 +144,15 @@ public class MainActivity extends Activity {
         } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
-    // ✅ FIX TEMA: Logica separata Auto vs Manuale
+    // ✅ FIX TEMA: Lettura centralizzata, applica sfondo root
     private void applyTheme() {
         try {
             String theme = prefs.getString("theme", "auto");
             int bg = 0;
-            if(theme.equals("night")) bg = Color.parseColor("#050510");
-            else if(theme.equals("ocean")) bg = Color.parseColor("#0A1A2A");
-            else if(theme.equals("classic")) bg = Color.parseColor("#000000");
-            else bg = 0xFF000000; // default
+            if("night".equals(theme)) bg = Color.parseColor("#050510");
+            else if("ocean".equals(theme)) bg = Color.parseColor("#0A1A2A");
+            else if("classic".equals(theme)) bg = Color.parseColor("#000000");
+            else bg = 0xFF000000;
             View root = findViewById(android.R.id.content).getRootView();
             if(root != null) root.setBackgroundColor(bg);
         } catch(Exception ignored) {}
@@ -173,11 +173,11 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
-    // ✅ FIX TEMA: Rispetta selezione manuale
+    // ✅ FIX TEMA: Rispetta selezione manuale, non sovrascrive se != "auto"
     private void applyThemeByTime() {
         try {
             String theme = prefs.getString("theme", "auto");
-            if(!theme.equals("auto")) return; // Se tema manuale, non sovrascrivere
+            if(!"auto".equals(theme)) return; // Tema manuale selezionato: esci subito
 
             long[] sunTimes = getSunTimesFoggia();
             long now = System.currentTimeMillis();
@@ -298,14 +298,14 @@ public class MainActivity extends Activity {
     private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
     private void toggleBluetooth() { try { BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter(); if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); } } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare."); } }
     
-    // ✅ FIX TEMA: Include "Auto" e salva correttamente
+    // ✅ FIX TEMA: Salva prefs, applica subito, aggiorna UI
     private void showThemeSelector() {
         final String[] themes = {"🌅 Auto Solare", "🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
         final String[] keys = {"auto", "classic", "night", "ocean"};
         new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
             prefs.edit().putString("theme", keys[w]).commit(); 
             applyTheme(); 
-            if(keys[w].equals("auto")) applyThemeByTime(); // Se auto, applica subito calcolo solare
+            if("auto".equals(keys[w])) applyThemeByTime(); 
             showAlert("Tema", "Applicato: " + themes[w]); 
         }}).show();
     }
@@ -441,9 +441,11 @@ public class MainActivity extends Activity {
                 boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
                 TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
                 TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
-                if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { 
-                    // ✅ FIX QUADRATI NERI: Sfondo trasparente/black uniforme
-                    tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#000000")); cell.setEnabled(false); cell.setClickable(false);
+                // ✅ FIX QUADRATI NERI: Trasparente totale, disabilitato
+                if(dayNum<1 || dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isMonth) { 
+                    tv.setText(""); dot.setText(""); 
+                    cell.setBackgroundColor(Color.TRANSPARENT); 
+                    cell.setEnabled(false); cell.setClickable(false); cell.setFocusable(false); cell.setPadding(0,0,0,0);
                 }
                 else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
                 cell.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }}); cell.addView(tv); cell.addView(dot);
@@ -465,7 +467,7 @@ public class MainActivity extends Activity {
                 if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); 
                 if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
-                // ✅ FIX PREVISIONI: Emoji corrette per ogni giorno, stile compatto
+                // ✅ FIX EMOJI PREVISIONI: Mappatura corretta per ogni giorno
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=1; i<w.length(); i++) {
@@ -487,7 +489,6 @@ public class MainActivity extends Activity {
         } }.execute();
     }
     
-    // ✅ Helper emoji robusto
     private String getWeatherEmoji(String desc) {
         if(desc.contains("piogg")||desc.contains("rain")||desc.contains("rovescio")) return "🌧";
         if(desc.contains("acquazzon")||desc.contains("shower")) return "🌦";
