@@ -7,7 +7,7 @@
     android:padding="3dp"
     android:weightSum="10">
 
-    <!-- RIGA SUPERIORE: Orologio + Meteo (15%) -->
+    <!-- RIGA SUPERIORE: Orologio + Meteo -->
     <LinearLayout android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1.5" android:orientation="horizontal" android:weightSum="10">
         <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="3.5" android:layout_marginRight="3dp" android:background="@drawable/card" android:orientation="vertical" android:padding="5dp">
             <TextView android:id="@+id/clock" android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="3" android:textSize="38dp" android:textStyle="bold" android:textColor="#FFFFFF" android:shadowColor="#D4AF37" android:shadowDx="0" android:shadowDy="0" android:shadowRadius="5" android:gravity="center"/>
@@ -18,18 +18,16 @@
         <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="6.5" android:layout_marginLeft="3dp" android:background="@drawable/card_weather" android:orientation="vertical" android:padding="4dp" android:weightSum="10">
             <HorizontalScrollView android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="8" android:scrollbars="none" android:fadeScrollbars="false">
                 <LinearLayout android:id="@+id/weatherForecastRow" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="fill_parent" android:gravity="center_vertical">
-                    <!-- Meteo Corrente -->
                     <LinearLayout android:layout_width="wrap_content" android:layout_height="fill_parent" android:orientation="vertical" android:gravity="center" android:layout_marginRight="12dp">
                         <TextView android:id="@+id/weatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☀" android:textSize="22dp"/>
                         <TextView android:id="@+id/weatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="19°C" android:textSize="17dp" android:textStyle="bold" android:textColor="#FFFFFF"/>
                         <TextView android:id="@+id/weatherDesc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Soleggiato" android:textSize="9dp" android:textColor="#A0A0A0"/>
                         <TextView android:id="@+id/weatherWind" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💨 4 km/h SE" android:textSize="8dp" android:textColor="#808080"/>
                     </LinearLayout>
-                    <!-- Previsioni -->
                     <LinearLayout android:id="@+id/forecastContainer" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="fill_parent" android:gravity="center_vertical"/>
                 </LinearLayout>
             </HorizontalScrollView>
-            <LinearLayout android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="2" android:gravity="right|center_vertical" android:paddingTop="4dp">
+            <LinearLayout android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="2" android:minHeight="30dp" android:gravity="right|center_vertical" android:paddingTop="4dp">
                 <Button android:id="@+id/btnCamera" android:text="📷" android:layout_width="24dp" android:layout_height="24dp" android:textSize="10dp" android:background="#1A1A1A" android:textColor="#D4AF37" android:layout_marginRight="3dp"/>
                 <Button android:id="@+id/btnRefreshWeather" android:text="🔄" android:layout_width="24dp" android:layout_height="24dp" android:textSize="10dp" android:background="#1A1A1A" android:textColor="#D4AF37" android:layout_marginRight="3dp"/>
                 <Button android:id="@+id/btnQuickControls" android:text="⚙️" android:layout_width="24dp" android:layout_height="24dp" android:textSize="10dp" android:background="#1A1A1A" android:textColor="#D4AF37"/>
@@ -37,7 +35,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- RIGA INFERIORE: Calendario + Note (85%) -->
+    <!-- RIGA INFERIORE: Calendario + Note -->
     <LinearLayout android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="8.5" android:layout_marginTop="4dp" android:orientation="horizontal" android:weightSum="10">
         <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="6.2" android:layout_marginRight="3dp" android:background="@drawable/card" android:orientation="vertical" android:padding="5dp">
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="2dp">

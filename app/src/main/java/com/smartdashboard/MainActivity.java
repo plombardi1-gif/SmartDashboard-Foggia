@@ -144,12 +144,17 @@ public class MainActivity extends Activity {
         } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati automaticamente."); }
     }
 
-    // ✅ FIX TEMALUMINOSITA: Separati e stabili
+    // ✅ FIX TEMA: Logica separata Auto vs Manuale
     private void applyTheme() {
         try {
-            String theme = prefs.getString("theme", "classic");
-            int bg = "night".equals(theme) ? Color.parseColor("#050510") : "ocean".equals(theme) ? Color.parseColor("#0A1A2A") : Color.parseColor("#000000");
-            View root = findViewById(android.R.id.content).getRootView(); if(root != null) root.setBackgroundColor(bg);
+            String theme = prefs.getString("theme", "auto");
+            int bg = 0;
+            if(theme.equals("night")) bg = Color.parseColor("#050510");
+            else if(theme.equals("ocean")) bg = Color.parseColor("#0A1A2A");
+            else if(theme.equals("classic")) bg = Color.parseColor("#000000");
+            else bg = 0xFF000000; // default
+            View root = findViewById(android.R.id.content).getRootView();
+            if(root != null) root.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -168,13 +173,18 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
     }
 
+    // ✅ FIX TEMA: Rispetta selezione manuale
     private void applyThemeByTime() {
         try {
+            String theme = prefs.getString("theme", "auto");
+            if(!theme.equals("auto")) return; // Se tema manuale, non sovrascrivere
+
             long[] sunTimes = getSunTimesFoggia();
             long now = System.currentTimeMillis();
             boolean isDay = now > sunTimes[0] && now < sunTimes[1];
             int bg = isDay ? (hourBetween(12, 18) ? 0xFF120A1A : 0xFF0A0A1A) : 0xFF050510;
-            View root = findViewById(android.R.id.content).getRootView(); if(root != null) root.setBackgroundColor(bg);
+            View root = findViewById(android.R.id.content).getRootView();
+            if(root != null) root.setBackgroundColor(bg);
         } catch(Exception ignored) {}
     }
 
@@ -267,20 +277,14 @@ public class MainActivity extends Activity {
             .setNegativeButton("Chiudi", null).show();
     }
 
-    // ✅ FIX LUMINOSITA: Stabile su API 14
     private void adjustBrightness() {
         final WindowManager.LayoutParams lp = getWindow().getAttributes();
         final SeekBar bar = new SeekBar(this); bar.setMax(255); 
         int current = (lp.screenBrightness < 0) ? 128 : (int)(lp.screenBrightness * 255);
         bar.setProgress(current);
         new AlertDialog.Builder(this).setTitle("Luminosità").setView(bar)
-            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
-                lp.screenBrightness = bar.getProgress() / 255f; 
-                getWindow().setAttributes(lp); 
-            }})
-            .setNegativeButton("Auto", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
-                lp.screenBrightness = -1; getWindow().setAttributes(lp); 
-            }}).show();
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { lp.screenBrightness = bar.getProgress() / 255f; getWindow().setAttributes(lp); }})
+            .setNegativeButton("Auto", new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { lp.screenBrightness = -1; getWindow().setAttributes(lp); }}).show();
     }
 
     private void adjustVolume() {
@@ -293,9 +297,17 @@ public class MainActivity extends Activity {
 
     private void toggleWifi() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { boolean on = wm.isWifiEnabled(); wm.setWifiEnabled(!on); showAlert("WiFi", !on ? "Attivato" : "Disattivato"); } } catch(Exception e) { showAlert("WiFi", "Impossibile modificare."); } }
     private void toggleBluetooth() { try { BluetoothAdapter ba = BluetoothAdapter.getDefaultAdapter(); if(ba != null) { if(ba.isEnabled()) ba.disable(); else ba.enable(); showAlert("Bluetooth", "Stato invertito"); } } catch(Exception e) { showAlert("Bluetooth", "Impossibile modificare."); } }
+    
+    // ✅ FIX TEMA: Include "Auto" e salva correttamente
     private void showThemeSelector() {
-        final String[] themes = {"🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"}; final String[] keys = {"classic", "night", "ocean"};
-        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { prefs.edit().putString("theme", keys[w]).commit(); applyTheme(); showAlert("Tema", "Applicato: " + themes[w]); } }).show();
+        final String[] themes = {"🌅 Auto Solare", "🌙 Oro Classico", "🌊 Blu Notte", "🖤 Minimalista"};
+        final String[] keys = {"auto", "classic", "night", "ocean"};
+        new AlertDialog.Builder(this).setTitle("Scegli Tema").setItems(themes, new DialogInterface.OnClickListener() { public void onClick(DialogInterface d, int w) { 
+            prefs.edit().putString("theme", keys[w]).commit(); 
+            applyTheme(); 
+            if(keys[w].equals("auto")) applyThemeByTime(); // Se auto, applica subito calcolo solare
+            showAlert("Tema", "Applicato: " + themes[w]); 
+        }}).show();
     }
 
     private void startVoiceInput() { try { Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Detta la nota..."); startActivityForResult(intent, VOICE_REQ); } catch(Exception e) { showAlert("Voice", "Servizio vocale non disponibile."); } }
@@ -429,7 +441,10 @@ public class MainActivity extends Activity {
                 boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date()));
                 TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC"));
                 TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37"));
-                if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#050505")); cell.setEnabled(false); }
+                if(dayNum<1||dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH)||!isMonth) { 
+                    // ✅ FIX QUADRATI NERI: Sfondo trasparente/black uniforme
+                    tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.parseColor("#000000")); cell.setEnabled(false); cell.setClickable(false);
+                }
                 else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); }
                 cell.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }}); cell.addView(tv); cell.addView(dot);
             } catch(Exception e) { e.printStackTrace(); } return cell;
@@ -443,10 +458,14 @@ public class MainActivity extends Activity {
         @Override protected void onPostExecute(String res) {
             try { if(res.equals("ERRORE")) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Offline"); return; }
                 JSONObject j=new JSONObject(res); JSONObject cur=j.getJSONArray("current_condition").getJSONObject(0); JSONArray w=j.getJSONArray("weather");
-                String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String ic="☀"; if(code.contains("nuvol")||code.contains("cloud")) ic="☁"; else if(code.contains("piogg")||code.contains("rain")) ic="🌧";
-                if(weatherIcon!=null) weatherIcon.setText(ic); if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
+                String code=cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); 
+                String ic = getWeatherEmoji(code);
+                if(weatherIcon!=null) weatherIcon.setText(ic); 
+                if(weatherTemp!=null) weatherTemp.setText(cur.getString("temp_C")+"°C"); 
+                if(weatherDesc!=null) weatherDesc.setText(cur.getJSONArray("weatherDesc").getJSONObject(0).getString("value")); 
+                if(weatherWind!=null) weatherWind.setText("💨 "+cur.getString("windspeedKmph")+" km/h "+cur.getString("winddir16Point"));
 
-                // ✅ PREVISIONI COMPATTE, STILE METEO CORRENTE, TUTTI I GIORNI DISPONIBILI
+                // ✅ FIX PREVISIONI: Emoji corrette per ogni giorno, stile compatto
                 if(forecastContainer!=null) { forecastContainer.removeAllViews();
                     String[] dn={"Lun","Mar","Mer","Gio","Ven","Sab","Dom"};
                     for(int i=1; i<w.length(); i++) {
@@ -454,7 +473,10 @@ public class MainActivity extends Activity {
                         String dy=dn[c.get(Calendar.DAY_OF_WEEK)-2]; if(dy==null) dy="Dom";
                         LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,10,0);
                         TextView tvDay=new TextView(MainActivity.this); tvDay.setText(dy); tvDay.setTextColor(Color.parseColor("#A0A0A0")); tvDay.setTextSize(9);
-                        String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase(); String wi="☀"; if(wd.contains("nuvol")||wd.contains("cloud")) wi="☁"; else if(wd.contains("piogg")||wd.contains("rain")) wi="🌧";
+                        
+                        String wd=d.getJSONArray("hourly").getJSONObject(6).getJSONArray("weatherDesc").getJSONObject(0).getString("value").toLowerCase();
+                        String wi = getWeatherEmoji(wd);
+                        
                         TextView tvIcon=new TextView(MainActivity.this); tvIcon.setText(wi); tvIcon.setTextColor(Color.WHITE); tvIcon.setTextSize(12);
                         TextView tvTemp=new TextView(MainActivity.this); tvTemp.setText(d.getJSONArray("hourly").getJSONObject(6).getString("tempC")+"°"); tvTemp.setTextColor(Color.WHITE); tvTemp.setTextSize(10);
                         item.addView(tvDay); item.addView(tvIcon); item.addView(tvTemp);
@@ -464,6 +486,20 @@ public class MainActivity extends Activity {
             } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); }
         } }.execute();
     }
+    
+    // ✅ Helper emoji robusto
+    private String getWeatherEmoji(String desc) {
+        if(desc.contains("piogg")||desc.contains("rain")||desc.contains("rovescio")) return "🌧";
+        if(desc.contains("acquazzon")||desc.contains("shower")) return "🌦";
+        if(desc.contains("nevic")||desc.contains("snow")||desc.contains("graupel")) return "❄️";
+        if(desc.contains("temp")||desc.contains("thunder")||desc.contains("fulmine")) return "⛈";
+        if(desc.contains("nuvol")||desc.contains("cloud")||desc.contains("neb")) return "☁️";
+        if(desc.contains("sereno")||desc.contains("clear")||desc.contains("sole")||desc.contains("sunny")) return "☀️";
+        if(desc.contains("poco")||desc.contains("partly")) return "⛅";
+        if(desc.contains("nebbia")||desc.contains("fog")||desc.contains("mist")) return "🌫";
+        return "🌤";
+    }
+
     private void startWeatherRefresh() { weatherHandler.postDelayed(new Runnable(){ public void run(){ loadWeather(); weatherHandler.postDelayed(this,1800000); }},1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
     @Override protected void onResume() { super.onResume(); try { setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); } catch(Exception ignored) {} }
