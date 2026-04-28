@@ -23,6 +23,7 @@
                     <TextView android:id="@+id/weatherWind" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💨 4 km/h SE" android:textSize="10dp" android:textColor="#808080"/>
                 </LinearLayout>
                 <Button android:id="@+id/btnRefreshWeather" android:text="🔄" android:layout_width="32dp" android:layout_height="32dp" android:textSize="14dp" android:background="#1A1A1A" android:textColor="#D4AF37" android:layout_marginLeft="8dp"/>
+                <Button android:id="@+id/btnQuickControls" android:text="⚙️" android:layout_width="32dp" android:layout_height="32dp" android:textSize="14dp" android:background="#1A1A1A" android:textColor="#D4AF37" android:layout_marginLeft="4dp"/>
             </LinearLayout>
             <ScrollView android:layout_width="fill_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="8dp">
                 <LinearLayout android:id="@+id/forecastContainer" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="wrap_content"/>
@@ -56,6 +57,7 @@
         <LinearLayout android:layout_width="0dp" android:layout_height="fill_parent" android:layout_weight="4" android:layout_marginLeft="6dp" android:background="@drawable/card" android:orientation="vertical" android:padding="8dp">
             <LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingBottom="6dp">
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="📝 Note" android:textSize="15dp" android:textStyle="bold" android:textColor="#D4AF37" android:letterSpacing="0.1"/>
+                <Button android:id="@+id/btnVoice" android:text="🎤" android:layout_width="34dp" android:layout_height="34dp" android:textSize="16dp" android:background="#1A1A1A" android:textColor="#D4AF37" android:layout_marginRight="4dp"/>
                 <Button android:id="@+id/btnAddTodo" android:text="+" android:layout_width="34dp" android:layout_height="34dp" android:textSize="16dp" android:textColor="#000000" android:background="#D4AF37" android:textStyle="bold"/>
             </LinearLayout>
             <ListView android:id="@+id/todoList" android:layout_width="fill_parent" android:layout_height="fill_parent" android:divider="#333333" android:dividerHeight="1dp"/>
