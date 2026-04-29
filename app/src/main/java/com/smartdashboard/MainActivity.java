@@ -138,6 +138,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             if(clockText != null) clockText.setOnLongClickListener(v -> { showSettingsMenu(); return true; });
 
             setupFullScreen(); checkNameDay();
+            if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
         } catch(Exception e) { e.printStackTrace(); showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage()); }
     }
 
@@ -214,6 +215,41 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
+
+    // ✅ Verifica permessi root (compatibile SuperSU/API 14)
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
     private void saveData() { try { JSONArray arr=new JSONArray(); for(TodoItem t:todos) { JSONObject obj=new JSONObject(); obj.put("text",t.text); obj.put("done",t.done); arr.put(obj); } prefs.edit().putString("todos",arr.toString()).commit(); } catch(Exception ignored) {} try { JSONObject obj=new JSONObject(); for(String date:eventsByDate.keySet()) { JSONArray arr=new JSONArray(); for(EventItem evt:eventsByDate.get(date)) { JSONObject e=new JSONObject(); e.put("time",evt.time); e.put("desc",evt.desc); e.put("done",evt.done); arr.put(e); } obj.put(date,arr); } prefs.edit().putString("events_map",obj.toString()).commit(); } catch(Exception ignored) {} }
     private void setupAdapters() { todoAdapter = new TodoAdapter(); dayEventsAdapter = new DayEventsAdapter(); if(todoList!=null) todoList.setAdapter(todoAdapter); if(dayEventsList!=null) dayEventsList.setAdapter(dayEventsAdapter); }
@@ -225,6 +261,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void updateCalendarDisplay() { String[] months={"Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"}; if(calendarMonth!=null) calendarMonth.setText(months[currentCal.get(Calendar.MONTH)]+" "+currentCal.get(Calendar.YEAR)); if(calendarAdapter!=null) runOnUiThread(() -> calendarAdapter.notifyDataSetChanged()); }
     private class CalendarAdapter extends BaseAdapter { @Override public int getCount() { return 42; } @Override public Object getItem(int p) { return null; } @Override public long getItemId(int p) { return 0; } @Override public View getView(final int pos, View cv, ViewGroup parent) { final LinearLayout cell = new LinearLayout(MainActivity.this); cell.setOrientation(LinearLayout.VERTICAL); cell.setGravity(Gravity.CENTER); cell.setPadding(2,3,2,3); cell.setBackgroundColor(Color.parseColor("#1A1A1A")); cell.setClickable(true); cell.setFocusable(true); cell.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, 75)); try { Calendar cal = (Calendar) currentCal.clone(); cal.set(Calendar.DAY_OF_MONTH, 1); int firstDay = cal.get(Calendar.DAY_OF_WEEK); int offset = (firstDay==Calendar.SUNDAY)?6:firstDay-2; int dayNum = pos-offset+1; cal.add(Calendar.DAY_OF_MONTH, pos-offset); final String key = new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(cal.getTime()); boolean hasEvt = eventsByDate.containsKey(key) && !eventsByDate.get(key).isEmpty(); boolean isMonth = cal.get(Calendar.MONTH)==currentCal.get(Calendar.MONTH); boolean isToday = key.equals(new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault()).format(new Date())); TextView tv = new TextView(MainActivity.this); tv.setGravity(Gravity.CENTER); tv.setTextSize(15); tv.setTextColor(Color.parseColor("#CCCCCC")); TextView dot = new TextView(MainActivity.this); dot.setGravity(Gravity.CENTER); dot.setTextSize(9); dot.setTextColor(Color.parseColor("#D4AF37")); if(dayNum<1 || dayNum>cal.getActualMaximum(Calendar.DAY_OF_MONTH) || !isMonth) { tv.setText(""); dot.setText(""); cell.setBackgroundColor(Color.TRANSPARENT); cell.setEnabled(false); cell.setClickable(false); cell.setFocusable(false); cell.setPadding(0,0,0,0); } else { tv.setText(String.valueOf(dayNum)); if(isToday) { tv.setTextColor(Color.parseColor("#D4AF37")); tv.setText("●"+dayNum); cell.setBackgroundColor(Color.parseColor("#333333")); } else if(hasEvt) { tv.setTextColor(Color.parseColor("#D4AF37")); dot.setText("●"); } cell.setEnabled(true); } cell.setOnClickListener(v -> { if(cell.isEnabled()) { selectedDate=key; updateDayEventsDisplay(); } }); cell.addView(tv); cell.addView(dot); } catch(Exception e) { e.printStackTrace(); } return cell; } }
     @Override protected void onResume() { super.onResume(); try { setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); } catch(Exception ignored) {} }
+            if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
     @Override protected void onPause() { super.onPause(); try { if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); statsHandler.removeCallbacksAndMessages(null); shiftHandler.removeCallbacksAndMessages(null); if(sensorManager!=null) sensorManager.unregisterListener(this); } catch(Exception ignored) {} }
     @Override protected void onDestroy() { super.onDestroy(); try { unregisterReceiver(batteryReceiver); } catch(Exception ignored) {} }
 }
