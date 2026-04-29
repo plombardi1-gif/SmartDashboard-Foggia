@@ -564,7 +564,42 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     private void startWeatherRefresh() { weatherHandler.postDelayed(new Runnable(){ public void run(){ loadWeather(); weatherHandler.postDelayed(this,1800000); }},1800000); }
+
+    // Verifica permessi root (SuperSU/API 14)
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     private void loadData() { /* ... existing ... */ try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<TodoItem>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<TodoItem>(); }
         eventsByDate = new HashMap<String, ArrayList<EventItem>>(); dayEvents = new ArrayList<EventItem>();
@@ -914,6 +949,23 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
     private void saveData() { try { JSONArray arr=new JSONArray(); for(TodoItem t:todos) { JSONObject obj=new JSONObject(); obj.put("text",t.text); obj.put("done",t.done); arr.put(obj); } prefs.edit().putString("todos",arr.toString()).commit(); } catch(Exception ignored) {} try { JSONObject obj=new JSONObject(); for(String date:eventsByDate.keySet()) { JSONArray arr=new JSONArray(); for(EventItem evt:eventsByDate.get(date)) { JSONObject e=new JSONObject(); e.put("time",evt.time); e.put("desc",evt.desc); e.put("done",evt.done); arr.put(e); } obj.put(date,arr); } prefs.edit().putString("events_map",obj.toString()).commit(); } catch(Exception ignored) {} }
     private void setupAdapters() { todoAdapter = new TodoAdapter(); dayEventsAdapter = new DayEventsAdapter(); if(todoList!=null) todoList.setAdapter(todoAdapter); if(dayEventsList!=null) dayEventsList.setAdapter(dayEventsAdapter); }
@@ -1323,6 +1375,23 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
     private void saveData() { try { JSONArray arr=new JSONArray(); for(TodoItem t:todos) { JSONObject obj=new JSONObject(); obj.put("text",t.text); obj.put("done",t.done); arr.put(obj); } prefs.edit().putString("todos",arr.toString()).commit(); } catch(Exception ignored) {} try { JSONObject obj=new JSONObject(); for(String date:eventsByDate.keySet()) { JSONArray arr=new JSONArray(); for(EventItem evt:eventsByDate.get(date)) { JSONObject e=new JSONObject(); e.put("time",evt.time); e.put("desc",evt.desc); e.put("done",evt.done); arr.put(e); } obj.put(date,arr); } prefs.edit().putString("events_map",obj.toString()).commit(); } catch(Exception ignored) {} }
     private void setupAdapters() { todoAdapter = new TodoAdapter(); dayEventsAdapter = new DayEventsAdapter(); if(todoList!=null) todoList.setAdapter(todoAdapter); if(dayEventsList!=null) dayEventsList.setAdapter(dayEventsAdapter); }

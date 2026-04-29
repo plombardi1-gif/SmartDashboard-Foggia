@@ -23,7 +23,7 @@
         android:label="Dashboard Pietro" 
         android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" 
         android:usesCleartextTraffic="true"
-        android:namespace="com.smartdashboard">
+        >
         
         <!-- Activity Principale -->
         <activity 
