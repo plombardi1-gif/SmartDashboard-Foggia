@@ -141,6 +141,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
             if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
             if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
+            if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
         } catch(Exception e) { e.printStackTrace(); showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage()); }
     }
 
