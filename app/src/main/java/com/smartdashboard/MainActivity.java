@@ -17,7 +17,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.AudioManager;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -25,7 +24,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.speech.RecognizerIntent;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -166,14 +164,18 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
     private String readLine(String path) { try { BufferedReader r = new BufferedReader(new FileReader(path)); String l = r.readLine(); r.close(); return l; } catch(Exception e) { return null; } }
     private int readCpuUsage() { try { BufferedReader r1 = new BufferedReader(new FileReader("/proc/stat")); String l1 = r1.readLine(); r1.close(); String[] t1 = l1.split("\\s+"); long u1=Long.parseLong(t1[1]), n1=Long.parseLong(t1[2]), s1=Long.parseLong(t1[3]), i1=Long.parseLong(t1[4]); long tot1 = u1+n1+s1+i1; try { Thread.sleep(500); } catch(InterruptedException e) {} BufferedReader r2 = new BufferedReader(new FileReader("/proc/stat")); String l2 = r2.readLine(); r2.close(); String[] t2 = l2.split("\\s+"); long u2=Long.parseLong(t2[1]), n2=Long.parseLong(t2[2]), s2=Long.parseLong(t2[3]), i2=Long.parseLong(t2[4]); long tot2 = u2+n2+s2+i2, dTot = tot2-tot1, dIdle = i2-i1; return (dTot==0) ? 0 : Math.min(100, Math.max(0, (int)((dTot-dIdle)*100/dTot))); } catch(Exception e) { return 0; } }
+    
+    // ✅ MENU IMPOSTAZIONI AVANZATE CON ROOT
     private void showSettingsMenu() {
-        final String[] items = {"🔆 Luminosità", "🌙 Luce Blu", "📏 Testo", "🔤 Font", "🔓 Lock Screen", "📶 Wi-Fi Always", "💾 Backup", "📥 Ripristina", "⚡ Kill Processi", "🧹 Pulizia Cache", "🚫 No Animazioni"};;;
-        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(items, (d, w) -> { try { switch(w) { case 0: adjustSoftwareBrightness(); break; case 1: toggleBlueLight(); break; case 2: adjustTextSize(); break; case 3: cycleFont(); break; case 4: toggleLockScreen(); break; case 5: toggleWifiAlwaysOn(); break; } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
-            case 6: backupData(); break;
-            case 7: restoreData(); break;
-            case 8: runRootCmd("am kill-all", "Processi in background terminati"); break;
-            case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break;
-            case 10: runRootCmd("settings put global window_animation_scale 0", "Animazioni disabilitate"); break;
+        final String[] items = {"🔆 Luminosità", "🌙 Luce Blu", "📏 Testo", "🔤 Font", "🔓 Lock Screen", "📶 Wi-Fi Always", "💾 Backup", "📥 Ripristina", "⚡ Kill Processi", "🧹 Pulizia Cache", "🚫 No Animazioni"};
+        new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(items, (d, w) -> { try { switch(w) { 
+            case 0: adjustSoftwareBrightness(); break; case 1: toggleBlueLight(); break; case 2: adjustTextSize(); break; 
+            case 3: cycleFont(); break; case 4: toggleLockScreen(); break; case 5: toggleWifiAlwaysOn(); break; 
+            case 6: backupData(); break; case 7: restoreData(); break; 
+            case 8: runRootCmd("am kill-all", "Processi in background terminati"); break; 
+            case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break; 
+            case 10: runRootCmd("settings put global window_animation_scale 0", "Animazioni disabilitate"); break; 
+        } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
     }
     private void adjustSoftwareBrightness() { final SeekBar bar = new SeekBar(this); bar.setMax(100); bar.setProgress((int)((1.0f - (brightnessOverlay.getAlpha()==0?1f:brightnessOverlay.getAlpha()))*100)); new AlertDialog.Builder(this).setTitle("🔆 Luminosità Software").setView(bar).setPositiveButton("OK", (d, w) -> { float alpha = 1.0f - (bar.getProgress()/100f); brightnessOverlay.setVisibility(alpha>0.05f?View.VISIBLE:View.GONE); brightnessOverlay.setBackgroundColor(Color.argb((int)(alpha*255),0,0,0)); }).show(); }
     private void toggleBlueLight() { boolean on = blueLightOverlay.getVisibility() == View.GONE; blueLightOverlay.setVisibility(on?View.VISIBLE:View.GONE); showAlert("Filtro Luce Blu", on?"Attivato":"Disattivato"); }
@@ -182,69 +184,45 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void cycleFont() { String[] fonts = {"DEFAULT", "MONOSPACE", "SERIF", "SANS_SERIF"}; int idx = prefs.getInt("font_idx", 0); idx = (idx + 1) % fonts.length; prefs.edit().putInt("font_idx", idx).commit(); Typeface tf = null; switch(idx) { case 0: tf = Typeface.DEFAULT; break; case 1: tf = Typeface.MONOSPACE; break; case 2: tf = Typeface.SERIF; break; case 3: tf = Typeface.SANS_SERIF; break; } if(clockText != null) clockText.setTypeface(tf); if(dateText != null) dateText.setTypeface(tf); if(weatherTemp != null) weatherTemp.setTypeface(tf); if(weatherCondition != null) weatherCondition.setTypeface(tf); showAlert("Font", "Cambiato in: " + fonts[idx]); }
     private void toggleLockScreen() { KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE); KeyguardManager.KeyguardLock lock = km.newKeyguardLock("DashboardLock"); lock.disableKeyguard(); showAlert("Lock Screen", "Disabilitato"); }
     private void toggleWifiAlwaysOn() { try { WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) { wm.setWifiEnabled(true); showAlert("Wi-Fi", "Always-On attivato"); } } catch(Exception e) { showAlert("Wi-Fi", "Impossibile modificare."); } }
-    private void backupData() { try { File dir = new File("/sdcard/DashboardPietro/"); if(!dir.exists()) dir.mkdirs(); FileWriter fw = new FileWriter(new File(dir, "backup.json")); fw.write(prefs.getAll().toString()); fw.close(); showAlert("Backup", "Salvato in /sdcard/DashboardPietro/backup.json"); } catch(Exception e) { showAlert("Backup", "Errore: " + e.getMessage()); } }
-    private void restoreData() { try { File f = new File("/sdcard/DashboardPietro/backup.json"); if(!f.exists()) { showAlert("Ripristino", "File non trovato."); return; } showAlert("Ripristino", "Dati caricati. Riavvia l'app."); } catch(Exception e) { showAlert("Ripristino", "Errore: " + e.getMessage()); } }
+    
+    // ✅ FUNZIONI BACKUP E RIPRISTINO
+    private void backupData() {
+        try { File dir = new File("/sdcard/DashboardPietro/"); if(!dir.exists()) dir.mkdirs(); FileWriter fw = new FileWriter(new File(dir, "backup.json")); fw.write(prefs.getAll().toString()); fw.close(); showAlert("Backup", "Salvato in /sdcard/DashboardPietro/backup.json"); } catch(Exception e) { showAlert("Backup", "Errore: " + e.getMessage()); }
+    }
+    private void restoreData() {
+        try { File f = new File("/sdcard/DashboardPietro/backup.json"); if(!f.exists()) { showAlert("Ripristino", "File non trovato."); return; } showAlert("Ripristino", "Dati caricati. Riavvia l'app."); } catch(Exception e) { showAlert("Ripristino", "Errore: " + e.getMessage()); }
+    }
+
+    // ✅ ESECUZIONE COMANDI ROOT
+    private void runRootCmd(String cmd, String successMsg) {
+        new AsyncTask<Void,Void,String>() {
+            @Override protected String doInBackground(Void... p) {
+                try { Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd}); proc.waitFor(); return proc.exitValue() == 0 ? "OK" : "ERR"; } catch(Exception e) { return "ERR: " + e.getMessage(); }
+            }
+            @Override protected void onPostExecute(String res) { if(res.startsWith("OK")) showAlert("Root", successMsg); else showAlert("Root Fallito", res); }
+        }.execute();
+    }
     private void startPixelShift() { shiftHandler.postDelayed(() -> { if(rootLayout != null) { shiftX += (shiftRandom.nextFloat() - 0.5f) * 3f; shiftY += (shiftRandom.nextFloat() - 0.5f) * 3f; rootLayout.setTranslationX(shiftX); rootLayout.setTranslationY(shiftY); } shiftHandler.postDelayed(this::startPixelShift, 300000); }, 300000); }
     private void setupSensors() { sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE); lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT); if(lightSensor != null) sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL); }
     public void onSensorChanged(SensorEvent e) { if(e.sensor.getType() == Sensor.TYPE_LIGHT) { float lux = e.values[0]; if(lux < 50 && blueLightOverlay.getVisibility()==View.GONE) toggleBlueLight(); else if(lux > 200 && blueLightOverlay.getVisibility()==View.VISIBLE) toggleBlueLight(); } }
     public void onAccuracyChanged(Sensor s, int a) {}
+    
+    // ✅ ONOMASTICI E FESTE
     private void checkNameDay() {
         HashMap<String, String> names = new HashMap<>();
         names.put("0101", "Capodanno"); names.put("0106", "Epifania"); names.put("0425", "Liberazione");
         names.put("0501", "Lavoro"); names.put("0602", "Repubblica"); names.put("0815", "Assunzione");
         names.put("1101", "Tutti i Santi"); names.put("1208", "Immacolata"); names.put("1225", "Natale");
-        names.put("0117", "S. Antonio"); names.put("0120", "S. Sebastiano"); names.put("0203", "S. Biagio");
-        names.put("0319", "S. Giuseppe"); names.put("0423", "S. Giorgio"); names.put("0613", "S. Antonio");
-        names.put("0624", "S. Giovanni"); names.put("0629", "S. Pietro"); names.put("0725", "S. Giacomo");
-        names.put("0810", "S. Lorenzo"); names.put("0929", "S. Michele"); names.put("1004", "S. Francesco");
-        names.put("1111", "S. Martino"); names.put("1206", "S. Nicola"); names.put("1207", "S. Ambrogio");
         String key = new SimpleDateFormat("MMdd", Locale.ITALY).format(new Date());
         if(names.containsKey(key)) dateText.setText(dateText.getText() + " • " + names.get(key));
     }
+    private void showAddNoteDialog() { EditText input = new EditText(this); input.setHint("Scrivi nota..."); input.setBackgroundColor(Color.parseColor("#1A1A1A")); input.setTextColor(Color.WHITE); new AlertDialog.Builder(this).setTitle("Nuova Nota").setView(input).setPositiveButton("Salva", (d, w) -> { String val=input.getText().toString().trim(); if(!val.isEmpty()) { todos.add(0, new TodoItem(val, false)); saveData(); runOnUiThread(() -> todoAdapter.notifyDataSetChanged()); } }).setNegativeButton("Annulla", null).show(); }
     private void startClock() { clockHandler.postDelayed(() -> { try { Date now=new Date(); if(clockText!=null) clockText.setText(new SimpleDateFormat("HH:mm:ss",Locale.getDefault()).format(now)); if(dateText!=null) dateText.setText(new SimpleDateFormat("EEEE dd MMMM yyyy",Locale.ITALY).format(now)); applyThemeByTime(); clockHandler.postDelayed(this::startClock,1000); } catch(Exception ignored) {} },1000); }
     private void loadWeather() { new AsyncTask<Void,Void,String>() { @Override protected String doInBackground(Void... p) { try { HttpURLConnection c=(HttpURLConnection)new URL("http://api.open-meteo.com/v1/forecast?latitude=41.46&longitude=15.54&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&hourly=temperature_2m,weather_code,uv_index,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe/Rome&forecast_days=1").openConnection(); c.setRequestMethod("GET"); c.setConnectTimeout(8000); c.setReadTimeout(8000); BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream())); StringBuilder s=new StringBuilder(); String l; while((l=r.readLine())!=null) s.append(l); r.close(); return s.toString(); } catch(Exception e) { return "ERRORE"; } } @Override protected void onPostExecute(String res) { try { if(res.equals("ERRORE")) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Offline"); return; } JSONObject j=new JSONObject(res); JSONObject cur=j.getJSONObject("current"); JSONObject daily=j.getJSONObject("daily"); JSONObject hourlyObj = j.getJSONObject("hourly"); int code=cur.optInt("weather_code",0); if(weatherIcon!=null) weatherIcon.setText(getWeatherEmoji(code)); if(weatherTemp!=null) weatherTemp.setText(cur.optString("temperature_2m","?")+"°C"); if(weatherCondition!=null) weatherCondition.setText(getWeatherText(code)); if(weatherMinMax!=null) weatherMinMax.setText("Min "+daily.optString("temperature_2m_min","?")+"°C | Max "+daily.optString("temperature_2m_max","?")+"°C"); String windSpeed = cur.optString("wind_speed_10m","?"); String windDir = getWindDirection(cur.optDouble("wind_direction_10m",0)); int currentUv = 0, currentRain = 0; String sunriseStr="--:--", sunsetStr="--:--"; try { String sr=daily.optString("sunrise",""); String ss=daily.optString("sunset",""); if(sr.length()>=16) sunriseStr=sr.substring(11,16); if(ss.length()>=16) sunsetStr=ss.substring(11,16); } catch(Exception ignored) {} JSONArray hTime=hourlyObj.getJSONArray("time"); JSONArray hTemp=hourlyObj.getJSONArray("temperature_2m"); JSONArray hCode=hourlyObj.optJSONArray("weather_code"); JSONArray hUv=hourlyObj.optJSONArray("uv_index"); JSONArray hRain=hourlyObj.optJSONArray("precipitation_probability"); int nowH=Calendar.getInstance().get(Calendar.HOUR_OF_DAY); int startIdx=0; for(int i=0; i<hTime.length(); i++) { int h=Integer.parseInt(hTime.getString(i).substring(11,13)); if(h==nowH) { startIdx=i; currentUv=(hUv!=null&&i<hUv.length())?hUv.optInt(i,0):0; currentRain=(hRain!=null&&i<hRain.length())?hRain.optInt(i,0):0; break; } } if(weatherDetails!=null) weatherDetails.setText("💨 "+windSpeed+" km/h "+windDir+" | 💧 "+cur.optString("relative_humidity_2m","?")+"% | ☀UV:"+currentUv+" | 🌧"+currentRain+"%"); if(weatherSunTimes!=null) weatherSunTimes.setText("🌅 "+sunriseStr+" | 🌇 "+sunsetStr); if(hourlyContainer!=null) { hourlyContainer.removeAllViews(); int count=0; for(int i=startIdx; i<hTime.length() && count<13; i++) { int h=Integer.parseInt(hTime.getString(i).substring(11,13)); if(h>23) break; int temp=(int)Math.round(hTemp.getDouble(i)); int wCode=0; if(hCode!=null&&i<hCode.length()) wCode=hCode.optInt(i,0); LinearLayout item=new LinearLayout(MainActivity.this); item.setOrientation(LinearLayout.VERTICAL); item.setGravity(Gravity.CENTER); item.setPadding(0,0,8,0); TextView tvH=new TextView(MainActivity.this); tvH.setText(String.valueOf(h)); tvH.setTextColor(Color.parseColor("#D4AF37")); tvH.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13); tvH.setGravity(Gravity.CENTER); TextView tvI=new TextView(MainActivity.this); tvI.setText(getWeatherEmoji(wCode)); tvI.setTextColor(Color.WHITE); tvI.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12); tvI.setGravity(Gravity.CENTER); TextView tvT=new TextView(MainActivity.this); tvT.setText(temp+"°C"); tvT.setTextColor(Color.WHITE); tvT.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12); tvT.setGravity(Gravity.CENTER); item.addView(tvH); item.addView(tvI); item.addView(tvT); hourlyContainer.addView(item); count++; } } } catch(Exception e) { if(weatherIcon!=null) weatherIcon.setText("✖"); if(weatherTemp!=null) weatherTemp.setText("Errore"); } } }.execute(); }
     private String getWeatherEmoji(int code) { if(code==0) return "SOLE"; if(code==1||code==2) return "NUVOLOSO"; if(code==3) return "NUVOLOSO"; if(code==45||code==48) return "NEBBIA"; if(code>=51&&code<=55) return "PIOGGIA"; if(code==56||code==57) return "NEVE"; if(code>=61&&code<=65) return "PIOGGIA"; if(code==66||code==67) return "NEVE"; if(code>=71&&code<=75) return "NEVE"; if(code==77) return "NEVE"; if(code>=80&&code<=82) return "PIOGGIA"; if(code==85||code==86) return "NEVE"; if(code>=95) return "TEMPORALE"; return "SOLE"; }
     private String getWeatherText(int code) { if(code==0) return "Sereno"; if(code==1) return "Principalmente sereno"; if(code==2) return "Parzialmente nuvoloso"; if(code==3) return "Nuvoloso"; if(code==45||code==48) return "Nebbia"; if(code>=51&&code<=55) return "Pioggerella"; if(code==56||code==57) return "Pioggerella ghiacciata"; if(code>=61&&code<=65) return "Pioggia"; if(code==66||code==67) return "Pioggia ghiacciata"; if(code>=71&&code<=75) return "Neve"; if(code==77) return "Gragnuola"; if(code>=80&&code<=82) return "Rovesci"; if(code==85||code==86) return "Nevicate"; if(code>=95) return "Temporale"; return "Variabile"; }
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
-
-    // Backup dati su SD card
-    private void backupData() {
-        try {
-            File dir = new File("/sdcard/DashboardPietro/");
-            if(!dir.exists()) dir.mkdirs();
-            FileWriter fw = new FileWriter(new File(dir, "backup.json"));
-            fw.write(prefs.getAll().toString());
-            fw.close();
-            showAlert("Backup", "Salvato in /sdcard/DashboardPietro/backup.json");
-        } catch(Exception e) { showAlert("Backup", "Errore: " + e.getMessage()); }
-    }
-    
-    // Ripristina dati da SD card
-    private void restoreData() {
-        try {
-            File f = new File("/sdcard/DashboardPietro/backup.json");
-            if(!f.exists()) { showAlert("Ripristino", "File non trovato."); return; }
-            showAlert("Ripristino", "Dati caricati. Riavvia l'app.");
-        } catch(Exception e) { showAlert("Ripristino", "Errore: " + e.getMessage()); }
-    }
-
-    // Esegui comando root con timeout e gestione errori
-    private void runRootCmd(String cmd, String successMsg) {
-        new AsyncTask<Void,Void,String>() {
-            @Override protected String doInBackground(Void... p) {
-                try {
-                    Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
-                    proc.waitFor();
-                    return proc.exitValue() == 0 ? "OK" : "ERR";
-                } catch(Exception e) { return "ERR: " + e.getMessage(); }
-            }
-            @Override protected void onPostExecute(String res) {
-                if(res.startsWith("OK")) showAlert("Root", successMsg);
-                else showAlert("Root Fallito", res);
-            }
-        }.execute();
-    }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
     private void saveData() { try { JSONArray arr=new JSONArray(); for(TodoItem t:todos) { JSONObject obj=new JSONObject(); obj.put("text",t.text); obj.put("done",t.done); arr.put(obj); } prefs.edit().putString("todos",arr.toString()).commit(); } catch(Exception ignored) {} try { JSONObject obj=new JSONObject(); for(String date:eventsByDate.keySet()) { JSONArray arr=new JSONArray(); for(EventItem evt:eventsByDate.get(date)) { JSONObject e=new JSONObject(); e.put("time",evt.time); e.put("desc",evt.desc); e.put("done",evt.done); arr.put(e); } obj.put(date,arr); } prefs.edit().putString("events_map",obj.toString()).commit(); } catch(Exception ignored) {} }
