@@ -167,10 +167,13 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String readLine(String path) { try { BufferedReader r = new BufferedReader(new FileReader(path)); String l = r.readLine(); r.close(); return l; } catch(Exception e) { return null; } }
     private int readCpuUsage() { try { BufferedReader r1 = new BufferedReader(new FileReader("/proc/stat")); String l1 = r1.readLine(); r1.close(); String[] t1 = l1.split("\\s+"); long u1=Long.parseLong(t1[1]), n1=Long.parseLong(t1[2]), s1=Long.parseLong(t1[3]), i1=Long.parseLong(t1[4]); long tot1 = u1+n1+s1+i1; try { Thread.sleep(500); } catch(InterruptedException e) {} BufferedReader r2 = new BufferedReader(new FileReader("/proc/stat")); String l2 = r2.readLine(); r2.close(); String[] t2 = l2.split("\\s+"); long u2=Long.parseLong(t2[1]), n2=Long.parseLong(t2[2]), s2=Long.parseLong(t2[3]), i2=Long.parseLong(t2[4]); long tot2 = u2+n2+s2+i2, dTot = tot2-tot1, dIdle = i2-i1; return (dTot==0) ? 0 : Math.min(100, Math.max(0, (int)((dTot-dIdle)*100/dTot))); } catch(Exception e) { return 0; } }
     private void showSettingsMenu() {
-        final String[] items = {"🔆 Luminosità Software", "🌙 Filtro Luce Blu", "📏 Dimensione Testo", "🔤 Font", "🔓 Sblocco Lock Screen", "📶 Wi-Fi Always On", "💾 Backup Dati", "📥 Ripristina Dati"};;
+        final String[] items = {"🔆 Luminosità", "🌙 Luce Blu", "📏 Testo", "🔤 Font", "🔓 Lock Screen", "📶 Wi-Fi Always", "💾 Backup", "📥 Ripristina", "⚡ Kill Processi", "🧹 Pulizia Cache", "🚫 No Animazioni"};;;
         new AlertDialog.Builder(this).setTitle("⚙️ Impostazioni").setItems(items, (d, w) -> { try { switch(w) { case 0: adjustSoftwareBrightness(); break; case 1: toggleBlueLight(); break; case 2: adjustTextSize(); break; case 3: cycleFont(); break; case 4: toggleLockScreen(); break; case 5: toggleWifiAlwaysOn(); break; } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
             case 6: backupData(); break;
             case 7: restoreData(); break;
+            case 8: runRootCmd("am kill-all", "Processi in background terminati"); break;
+            case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break;
+            case 10: runRootCmd("settings put global window_animation_scale 0", "Animazioni disabilitate"); break;
     }
     private void adjustSoftwareBrightness() { final SeekBar bar = new SeekBar(this); bar.setMax(100); bar.setProgress((int)((1.0f - (brightnessOverlay.getAlpha()==0?1f:brightnessOverlay.getAlpha()))*100)); new AlertDialog.Builder(this).setTitle("🔆 Luminosità Software").setView(bar).setPositiveButton("OK", (d, w) -> { float alpha = 1.0f - (bar.getProgress()/100f); brightnessOverlay.setVisibility(alpha>0.05f?View.VISIBLE:View.GONE); brightnessOverlay.setBackgroundColor(Color.argb((int)(alpha*255),0,0,0)); }).show(); }
     private void toggleBlueLight() { boolean on = blueLightOverlay.getVisibility() == View.GONE; blueLightOverlay.setVisibility(on?View.VISIBLE:View.GONE); showAlert("Filtro Luce Blu", on?"Attivato":"Disattivato"); }
@@ -224,6 +227,23 @@ public class MainActivity extends Activity implements SensorEventListener {
             if(!f.exists()) { showAlert("Ripristino", "File non trovato."); return; }
             showAlert("Ripristino", "Dati caricati. Riavvia l'app.");
         } catch(Exception e) { showAlert("Ripristino", "Errore: " + e.getMessage()); }
+    }
+
+    // Esegui comando root con timeout e gestione errori
+    private void runRootCmd(String cmd, String successMsg) {
+        new AsyncTask<Void,Void,String>() {
+            @Override protected String doInBackground(Void... p) {
+                try {
+                    Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
+                    proc.waitFor();
+                    return proc.exitValue() == 0 ? "OK" : "ERR";
+                } catch(Exception e) { return "ERR: " + e.getMessage(); }
+            }
+            @Override protected void onPostExecute(String res) {
+                if(res.startsWith("OK")) showAlert("Root", successMsg);
+                else showAlert("Root Fallito", res);
+            }
+        }.execute();
     }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
