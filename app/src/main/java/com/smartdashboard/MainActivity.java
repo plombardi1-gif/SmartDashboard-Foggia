@@ -210,9 +210,35 @@ public class MainActivity extends Activity implements SensorEventListener {
     // ✅ ONOMASTICI E FESTE
     private void checkNameDay() {
         HashMap<String, String> names = new HashMap<>();
-        names.put("0101", "Capodanno"); names.put("0106", "Epifania"); names.put("0425", "Liberazione");
-        names.put("0501", "Lavoro"); names.put("0602", "Repubblica"); names.put("0815", "Assunzione");
-        names.put("1101", "Tutti i Santi"); names.put("1208", "Immacolata"); names.put("1225", "Natale");
+        /* FESTIVITÀ NAZIONALI */
+        names.put("0101", "Capodanno");
+        names.put("0106", "Epifania");
+        names.put("0425", "Liberazione");
+        names.put("0501", "Festa del Lavoro");
+        names.put("0602", "Festa della Repubblica");
+        names.put("0815", "Assunzione");
+        names.put("1101", "Ognissanti");
+        names.put("1208", "Immacolata Concezione");
+        names.put("1225", "Natale");
+        names.put("1226", "Santo Stefano");
+        /* ONOMASTICI COMUNI */
+        names.put("0117", "S. Antonio Abate");
+        names.put("0120", "S. Sebastiano");
+        names.put("0121", "S. Agnese");
+        names.put("0203", "S. Biagio");
+        names.put("0319", "S. Giuseppe");
+        names.put("0423", "S. Giorgio");
+        names.put("0503", "S. Filippo e Giacomo");
+        names.put("0613", "S. Antonio da Padova");
+        names.put("0624", "S. Giovanni Battista");
+        names.put("0629", "S. Pietro e Paolo");
+        names.put("0725", "S. Giacomo");
+        names.put("0810", "S. Lorenzo");
+        names.put("0929", "S. Michele Arcangelo");
+        names.put("1004", "S. Francesco d'Assisi");
+        names.put("1111", "S. Martino");
+        names.put("1206", "S. Nicola");
+        names.put("1207", "S. Ambrogio");
         String key = new SimpleDateFormat("MMdd", Locale.ITALY).format(new Date());
         if(names.containsKey(key)) dateText.setText(dateText.getText() + " • " + names.get(key));
     }
