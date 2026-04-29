@@ -174,7 +174,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             case 6: backupData(); break; case 7: restoreData(); break; 
             case 8: runRootCmd("am kill-all", "Processi in background terminati"); break; 
             case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break; 
-            case 10: runRootCmd("settings put global window_animation_scale 0", "Animazioni disabilitate"); break; 
+            case 10: runRootCmd("settings put global window_animation_scale 0 && settings put global transition_animation_scale 0 && settings put global animator_duration_scale 0", "Animazioni disabilitate (riavvia app)"); break; 
         } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
     }
     private void adjustSoftwareBrightness() { final SeekBar bar = new SeekBar(this); bar.setMax(100); bar.setProgress((int)((1.0f - (brightnessOverlay.getAlpha()==0?1f:brightnessOverlay.getAlpha()))*100)); new AlertDialog.Builder(this).setTitle("🔆 Luminosità Software").setView(bar).setPositiveButton("OK", (d, w) -> { float alpha = 1.0f - (bar.getProgress()/100f); brightnessOverlay.setVisibility(alpha>0.05f?View.VISIBLE:View.GONE); brightnessOverlay.setBackgroundColor(Color.argb((int)(alpha*255),0,0,0)); }).show(); }
