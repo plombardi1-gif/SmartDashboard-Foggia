@@ -1,3 +1,10 @@
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.media.MediaRecorder;
+import android.os.Vibrator;
+import android.os.CountDownTimer;
+import java.io.File;
 package com.smartdashboard;
 
 import android.app.Activity;
@@ -86,6 +93,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     private Sensor lightSensor;
     private Random shiftRandom = new Random();
     private float shiftX = 0, shiftY = 0;
+    private MediaRecorder mediaRecorder;
+    private File audioFile;
+    private boolean isRecording = false;
+    private CountDownTimer countDownTimer;
 
     static class TodoItem { String text; boolean done; TodoItem(String t, boolean d) { text=t; done=d; } }
     static class EventItem { String time, desc; boolean done; EventItem(String t, String d, boolean done) { time=t; desc=d; this.done=done; } String display() { return (time.isEmpty()?"":time+" - ")+desc; } }
@@ -176,6 +187,9 @@ public class MainActivity extends Activity implements SensorEventListener {
             case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break; 
             case 10: runRootCmd("settings put global window_animation_scale 0 && settings put global transition_animation_scale 0 && settings put global animator_duration_scale 0", "Animazioni disabilitate (riavvia app)"); break; 
             case 11: changeTheme(); break;
+            case 12: setReminder(); break;
+            case 13: startCountdown(); break;
+            case 14: toggleVoiceNote(); break;
         } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
     }
     private void adjustSoftwareBrightness() { final SeekBar bar = new SeekBar(this); bar.setMax(100); bar.setProgress((int)((1.0f - (brightnessOverlay.getAlpha()==0?1f:brightnessOverlay.getAlpha()))*100)); new AlertDialog.Builder(this).setTitle("🔆 Luminosità Software").setView(bar).setPositiveButton("OK", (d, w) -> { float alpha = 1.0f - (bar.getProgress()/100f); brightnessOverlay.setVisibility(alpha>0.05f?View.VISIBLE:View.GONE); brightnessOverlay.setBackgroundColor(Color.argb((int)(alpha*255),0,0,0)); }).show(); }
@@ -284,4 +298,105 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override protected void onResume() { super.onResume(); try { setupFullScreen(); applyThemeByTime(); if(wakeLock!=null && !wakeLock.isHeld()) wakeLock.acquire(10*60*1000L); } catch(Exception ignored) {} }
     @Override protected void onPause() { super.onPause(); try { if(wakeLock!=null && wakeLock.isHeld()) wakeLock.release(); statsHandler.removeCallbacksAndMessages(null); shiftHandler.removeCallbacksAndMessages(null); if(sensorManager!=null) sensorManager.unregisterListener(this); } catch(Exception ignored) {} }
     @Override protected void onDestroy() { super.onDestroy(); try { unregisterReceiver(batteryReceiver); } catch(Exception ignored) {} }
+
+    // ✅ IMPSTA SVEGLIA / PROMEMORIA
+    private void setReminder() {
+        try {
+            // Usa un TimePicker semplificato (Input Minutes per semplicità API 14)
+            final EditText input = new EditText(this);
+            input.setHint("Minuti da oggi (es. 10 per 10 min)");
+            input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            new AlertDialog.Builder(this).setTitle("⏰ Imposta Promemoria")
+                .setView(input)
+                .setPositiveButton("Imposta", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            int minutes = Integer.parseInt(input.getText().toString());
+                            long timeInMillis = System.currentTimeMillis() + (minutes * 60 * 1000);
+                            
+                            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                            Intent intent = new Intent(MainActivity.this, AlarmReceiver.class);
+                            PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
+                            
+                            // API 14 set() è sufficiente, setExact è API 19+
+                            alarmManager.set(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
+                            showAlert("Sveglia", "Promemoria impostato tra " + minutes + " minuti.");
+                        } catch (Exception e) { showAlert("Errore", "Inserisci un numero valido."); }
+                    }
+                }).setNegativeButton("Annulla", null).show();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // ✅ TIMER COUNTDOWN
+    private void startCountdown() {
+        try {
+            final EditText input = new EditText(this);
+            input.setHint("Secondi (es. 60)");
+            input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            new AlertDialog.Builder(this).setTitle("⏳ Timer Countdown")
+                .setView(input)
+                .setPositiveButton("Start", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            final int seconds = Integer.parseInt(input.getText().toString());
+                            if(countDownTimer != null) countDownTimer.cancel();
+                            
+                            final AlertDialog d = new AlertDialog.Builder(MainActivity.this).create();
+                            d.setTitle("⏳ Countdown");
+                            final android.widget.TextView tv = new android.widget.TextView(MainActivity.this);
+                            tv.setGravity(android.view.Gravity.CENTER);
+                            tv.setTextSize(30);
+                            tv.setPadding(0, 20, 0, 20);
+                            d.setView(tv);
+                            
+                            countDownTimer = new CountDownTimer(seconds * 1000, 1000) {
+                                public void onTick(long millisUntilFinished) {
+                                    tv.setText(String.valueOf(millisUntilFinished / 1000));
+                                }
+                                public void onFinish() {
+                                    tv.setText("0");
+                                    showAlert("Timer", "Tempo Scaduto!");
+                                    // Vibra alla fine
+                                    Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                    if(v != null) v.vibrate(1000);
+                                }
+                            }.start();
+                            d.show();
+                            // Auto-dismiss dopo il tempo
+                            d.dismiss(); 
+                        } catch (Exception e) { showAlert("Errore", "Inserisci un numero valido."); }
+                    }
+                }).setNegativeButton("Annulla", null).show();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // ✅ NOTA VOCALE (Senza Google, solo file audio AMR)
+    private void toggleVoiceNote() {
+        try {
+            if (!isRecording) {
+                // START RECORDING
+                audioFile = new File(getExternalFilesDir(null), "voice_note_" + System.currentTimeMillis() + ".amr");
+                mediaRecorder = new MediaRecorder();
+                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR); // Formato nativo API 14
+                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                mediaRecorder.setOutputFile(audioFile.getAbsolutePath());
+                mediaRecorder.prepare();
+                mediaRecorder.start();
+                isRecording = true;
+                showAlert("🎤 Rec", "Registrazione in corso... (Tocca di nuovo per fermare)");
+            } else {
+                // STOP RECORDING
+                mediaRecorder.stop();
+                mediaRecorder.release();
+                isRecording = false;
+                showAlert("💾 Salvato", "Nota vocale salvata in memoria.");
+            }
+        } catch (Exception e) {
+            showAlert("Errore Audio", "Impossibile registrare. Controlla permessi microfono.");
+            isRecording = false;
+        }
+    }
 }
