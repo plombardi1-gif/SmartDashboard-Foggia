@@ -175,6 +175,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             case 8: runRootCmd("am kill-all", "Processi in background terminati"); break; 
             case 9: runRootCmd("pm trim-caches 52428800", "Cache pulita (50MB)"); break; 
             case 10: runRootCmd("settings put global window_animation_scale 0 && settings put global transition_animation_scale 0 && settings put global animator_duration_scale 0", "Animazioni disabilitate (riavvia app)"); break; 
+            case 11: changeTheme(); break;
         } } catch(Exception e) { showAlert("Errore", "Permesso root negato o comando non supportato."); } }).setNegativeButton("Chiudi", null).show();
     }
     private void adjustSoftwareBrightness() { final SeekBar bar = new SeekBar(this); bar.setMax(100); bar.setProgress((int)((1.0f - (brightnessOverlay.getAlpha()==0?1f:brightnessOverlay.getAlpha()))*100)); new AlertDialog.Builder(this).setTitle("🔆 Luminosità Software").setView(bar).setPositiveButton("OK", (d, w) -> { float alpha = 1.0f - (bar.getProgress()/100f); brightnessOverlay.setVisibility(alpha>0.05f?View.VISIBLE:View.GONE); brightnessOverlay.setBackgroundColor(Color.argb((int)(alpha*255),0,0,0)); }).show(); }
@@ -249,6 +250,26 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String getWeatherText(int code) { if(code==0) return "Sereno"; if(code==1) return "Principalmente sereno"; if(code==2) return "Parzialmente nuvoloso"; if(code==3) return "Nuvoloso"; if(code==45||code==48) return "Nebbia"; if(code>=51&&code<=55) return "Pioggerella"; if(code==56||code==57) return "Pioggerella ghiacciata"; if(code>=61&&code<=65) return "Pioggia"; if(code==66||code==67) return "Pioggia ghiacciata"; if(code>=71&&code<=75) return "Neve"; if(code==77) return "Gragnuola"; if(code>=80&&code<=82) return "Rovesci"; if(code==85||code==86) return "Nevicate"; if(code>=95) return "Temporale"; return "Variabile"; }
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
+
+    // Cambio tema
+    private void changeTheme() {
+        String currentTheme = prefs.getString("theme", "dark");
+        String[] themes = {"Scuro", "Chiaro", "Auto (Giorno/Notte)"};
+        String[] themeKeys = {"dark", "light", "auto"};
+        int currentIndex = 0;
+        for(int i=0; i<themeKeys.length; i++) {
+            if(themeKeys[i].equals(currentTheme)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        new AlertDialog.Builder(this).setTitle("🎨 Scegli Tema")
+            .setSingleChoiceItems(themes, currentIndex, (d, which) -> {
+                prefs.edit().putString("theme", themeKeys[which]).commit();
+                applyTheme();
+                d.dismiss();
+            }).setNegativeButton("Annulla", null).show();
+    }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
     private void saveData() { try { JSONArray arr=new JSONArray(); for(TodoItem t:todos) { JSONObject obj=new JSONObject(); obj.put("text",t.text); obj.put("done",t.done); arr.put(obj); } prefs.edit().putString("todos",arr.toString()).commit(); } catch(Exception ignored) {} try { JSONObject obj=new JSONObject(); for(String date:eventsByDate.keySet()) { JSONArray arr=new JSONArray(); for(EventItem evt:eventsByDate.get(date)) { JSONObject e=new JSONObject(); e.put("time",evt.time); e.put("desc",evt.desc); e.put("done",evt.done); arr.put(e); } obj.put(date,arr); } prefs.edit().putString("events_map",obj.toString()).commit(); } catch(Exception ignored) {} }
