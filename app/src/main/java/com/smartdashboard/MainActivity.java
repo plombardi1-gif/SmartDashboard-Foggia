@@ -1,5 +1,71 @@
 package com.smartdashboard;
-import android.app.Activity; import android.app.ActivityManager; import android.app.AlertDialog; import android.app.KeyguardManager; import android.content.BroadcastReceiver; import android.content.Context; import android.content.DialogInterface; import android.content.Intent; import android.content.IntentFilter; import android.content.SharedPreferences; import android.content.pm.ActivityInfo; import android.graphics.Color; import android.graphics.Typeface; import android.hardware.Sensor; import android.hardware.SensorEvent; import android.hardware.SensorEventListener; import android.hardware.SensorManager; import android.media.AudioManager; import android.net.Uri; import android.net.wifi.WifiManager; import android.os.AsyncTask; import android.os.Build; import android.os.Bundle; import android.os.Handler; import android.os.Looper; import android.os.PowerManager; import android.os.Vibrator; import android.provider.Settings; import android.speech.RecognizerIntent; import android.text.TextUtils; import android.util.TypedValue; import android.view.Gravity; import android.view.View; import android.view.ViewGroup; import android.view.Window; import android.view.WindowManager; import android.widget.BaseAdapter; import android.widget.Button; import android.widget.EditText; import android.widget.GridView; import android.widget.LinearLayout; import android.widget.ListView; import android.widget.SeekBar; import android.widget.TextView; import android.bluetooth.BluetoothAdapter; import org.json.JSONArray; import org.json.JSONException; import org.json.JSONObject; import java.io.BufferedReader; import java.io.DataOutputStream; import java.io.File; import java.io.FileReader; import java.io.FileWriter; import java.io.InputStreamReader; import java.net.HttpURLConnection; import java.net.URL; import java.text.SimpleDateFormat; import java.util.ArrayList; import java.util.Calendar; import java.util.Date; import java.util.HashMap; import java.util.List; import java.util.Locale; import java.util.Random;
+
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.AlertDialog;
+import android.app.KeyguardManager;
+import android.app.PendingIntent; // ✅ AGGIUNTO: mancava questo import
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.PowerManager;
+import android.os.Vibrator;
+import android.provider.Settings;
+import android.speech.RecognizerIntent;
+import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.bluetooth.BluetoothAdapter;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+
 public class MainActivity extends Activity implements SensorEventListener {
     private TextView clockText, dateText, smartHomeText, batteryText, weatherIcon, weatherTemp, weatherCondition, weatherMinMax, weatherDetails, weatherSunTimes, hwStats;
     private TextView calendarMonth, selectedDayTitle;
@@ -23,8 +89,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     private HashMap<Integer, Boolean> expandedEvents = new HashMap<Integer, Boolean>();
     private SensorManager sensorManager; private Sensor lightSensor;
     private Random shiftRandom = new Random(); private float shiftX = 0, shiftY = 0;
+
     static class TodoItem { String text; boolean done; TodoItem(String t, boolean d) { text=t; done=d; } }
     static class EventItem { String time, desc; boolean done; EventItem(String t, String d, boolean done) { time=t; desc=d; this.done=done; } String display() { return (time.isEmpty()?"":time+" - ")+desc; } }
+
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
@@ -35,6 +103,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "DashboardPietro:WakeLock");
             setContentView(R.layout.activity_main);
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
             rootLayout = (LinearLayout) findViewById(R.id.rootLayout);
             clockText = (TextView) findViewById(R.id.clock); dateText = (TextView) findViewById(R.id.date); smartHomeText = (TextView) findViewById(R.id.smartHomeText);
             batteryText = (TextView) findViewById(R.id.batteryText);
@@ -50,12 +119,15 @@ public class MainActivity extends Activity implements SensorEventListener {
             btnAddEvt = (Button) findViewById(R.id.btnAddEvt); btnAddTodo = (Button) findViewById(R.id.btnAddTodo); btnPrevMonth = (Button) findViewById(R.id.btnPrevMonth);
             btnNextMonth = (Button) findViewById(R.id.btnNextMonth); btnRefreshWeather = (Button) findViewById(R.id.btnRefreshWeather);
             btnAddNote = (Button) findViewById(R.id.btnAddNote); btnSettings = (Button) findViewById(R.id.btnSettings);
+
             prefs = getSharedPreferences("dashboard_data", MODE_PRIVATE);
             validateAndLoadPrefs(); applyTheme(); applyGlobalTextSettings(); loadData(); setupAdapters(); registerBatteryReceiver();
             currentCal = Calendar.getInstance(); calendarAdapter = new CalendarAdapter();
             if(calendarGrid != null) { calendarGrid.setAdapter(calendarAdapter); updateCalendarDisplay(); }
+
             clockHandler = new Handler(); weatherHandler = new Handler(); statsHandler = new Handler(); shiftHandler = new Handler();
             startClock(); loadWeather(); startWeatherRefresh(); startStatsUpdater(); startPixelShift(); setupSensors(); scheduleNightReboot();
+
             if(btnAddEvt != null) btnAddEvt.setOnClickListener(v -> showAddEventDialog(selectedDate));
             if(btnAddTodo != null) btnAddTodo.setOnClickListener(v -> showAddTodoDialog());
             if(btnAddNote != null) btnAddNote.setOnClickListener(v -> showAddNoteDialog());
@@ -64,9 +136,11 @@ public class MainActivity extends Activity implements SensorEventListener {
             if(btnNextMonth != null) btnNextMonth.setOnClickListener(v -> { currentCal.add(Calendar.MONTH, 1); updateCalendarDisplay(); });
             if(btnRefreshWeather != null) btnRefreshWeather.setOnClickListener(v -> loadWeather());
             if(clockText != null) clockText.setOnLongClickListener(v -> { showSettingsMenu(); return true; });
+
             setupFullScreen(); checkNameDay();
         } catch(Exception e) { e.printStackTrace(); showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage()); }
     }
+
     private void validateAndLoadPrefs() {
         try { String json = prefs.getString("todos", null); if(json != null) new JSONArray(json); json = prefs.getString("events_map", null); if(json != null) new JSONObject(json); } catch(Exception e) { prefs.edit().clear().commit(); showAlert("Prefs corrotte", "Dati resettati."); }
     }
@@ -102,11 +176,28 @@ public class MainActivity extends Activity implements SensorEventListener {
     private void toggleBlueLight() { boolean on = blueLightOverlay.getVisibility() == View.GONE; blueLightOverlay.setVisibility(on?View.VISIBLE:View.GONE); showAlert("Filtro Luce Blu", on?"Attivato":"Disattivato"); }
     private void adjustTextSize() { final SeekBar bar = new SeekBar(this); bar.setMax(20); bar.setProgress(prefs.getInt("text_size_offset", 0)); new AlertDialog.Builder(this).setTitle("📏 Dimensione Testo").setView(bar).setPositiveButton("OK", (d, w) -> { prefs.edit().putInt("text_size_offset", bar.getProgress()).commit(); applyGlobalTextSettings(); }).show(); }
     private void applyGlobalTextSettings() { float base = 1.0f + (prefs.getInt("text_size_offset", 0)/20f); if(clockText != null) clockText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 38 * base); if(dateText != null) dateText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13 * base); if(weatherTemp != null) weatherTemp.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24 * base); if(weatherCondition != null) weatherCondition.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12 * base); }
-    private void cycleFont() { String[] fonts = {"DEFAULT", "MONOSPACE", "SERIF", "SANS_SERIF"}; int idx = prefs.getInt("font_idx", 0); idx = (idx + 1) % fonts.length; prefs.edit().putInt("font_idx", idx).commit(); Typeface tf = null; switch(idx) { case 0: tf = Typeface.DEFAULT; break; case 1: tf = Typeface.MONOSPACE; break; case 2: tf = Typeface.SERIF; break; case 3: tf = Typeface.SANS_SERIF; break; } if(rootLayout != null) rootLayout.setTypeface(tf); showAlert("Font", "Cambiato in: " + fonts[idx]); }
+    
+    // ✅ FIX: applica font solo ai TextView principali (LinearLayout non supporta setTypeface)
+    private void cycleFont() { String[] fonts = {"DEFAULT", "MONOSPACE", "SERIF", "SANS_SERIF"}; int idx = prefs.getInt("font_idx", 0); idx = (idx + 1) % fonts.length; prefs.edit().putInt("font_idx", idx).commit(); Typeface tf = null; switch(idx) { case 0: tf = Typeface.DEFAULT; break; case 1: tf = Typeface.MONOSPACE; break; case 2: tf = Typeface.SERIF; break; case 3: tf = Typeface.SANS_SERIF; break; }
+        // Applica solo ai TextView principali (API 14 compatible)
+        if(clockText != null) clockText.setTypeface(tf);
+        if(dateText != null) dateText.setTypeface(tf);
+        if(weatherTemp != null) weatherTemp.setTypeface(tf);
+        if(weatherCondition != null) weatherCondition.setTypeface(tf);
+        if(weatherDetails != null) weatherDetails.setTypeface(tf);
+        if(weatherSunTimes != null) weatherSunTimes.setTypeface(tf);
+        if(hwStats != null) hwStats.setTypeface(tf);
+        if(calendarMonth != null) calendarMonth.setTypeface(tf);
+        showAlert("Font", "Cambiato in: " + fonts[idx]); 
+    }
+    
     private void toggleLockScreen() { KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE); KeyguardManager.KeyguardLock lock = km.newKeyguardLock("DashboardLock"); lock.disableKeyguard(); runRootCmd("settings put secure lockscreen.disabled 1"); showAlert("Lock Screen", "Disabilitato"); }
     private void toggleWifiAlwaysOn() { runRootCmd("settings put system wifi_sleep_policy 2"); WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE); if(wm != null) wm.setWifiEnabled(true); showAlert("Wi-Fi", "Always-On attivato"); }
     private void toggleNightReboot() { boolean on = !prefs.getBoolean("night_reboot", false); prefs.edit().putBoolean("night_reboot", on).commit(); scheduleNightReboot(); showAlert("Riavvio Notturno", on?"Programmato alle 04:00":"Disattivato"); }
+    
+    // ✅ FIX: PendingIntent ora è importato correttamente
     private void scheduleNightReboot() { if(!prefs.getBoolean("night_reboot", false)) return; Calendar cal = Calendar.getInstance(); cal.set(Calendar.HOUR_OF_DAY, 4); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); if(cal.before(Calendar.getInstance())) cal.add(Calendar.DAY_OF_YEAR, 1); Intent i = new Intent(this, RebootReceiver.class); PendingIntent pi = PendingIntent.getBroadcast(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT); android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(ALARM_SERVICE); am.setRepeating(android.app.AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), android.app.AlarmManager.INTERVAL_DAY, pi); }
+    
     private void toggleNavBar() { boolean hide = !prefs.getBoolean("nav_hidden", false); prefs.edit().putBoolean("nav_hidden", hide).commit(); if(hide) { runRootCmd("cp /system/build.prop /sdcard/build.prop.bak"); runRootCmd("mount -o rw,remount /system"); runRootCmd("echo qemu.hw.mainkeys=1 >> /system/build.prop"); runRootCmd("mount -o ro,remount /system"); showAlert("Nav Bar", "Nascosta. Riavvia il tablet."); } else { runRootCmd("cp /sdcard/build.prop.bak /system/build.prop"); runRootCmd("mount -o rw,remount /system"); runRootCmd("mount -o ro,remount /system"); showAlert("Nav Bar", "Ripristinata. Riavvia il tablet."); } }
     private void backupData() { try { File dir = new File("/sdcard/DashboardPietro/"); if(!dir.exists()) dir.mkdirs(); FileWriter fw = new FileWriter(new File(dir, "backup.json")); fw.write(prefs.getAll().toString()); fw.close(); showAlert("Backup", "Salvato in /sdcard/DashboardPietro/backup.json"); } catch(Exception e) { showAlert("Backup", "Errore: " + e.getMessage()); } }
     private void restoreData() { try { File f = new File("/sdcard/DashboardPietro/backup.json"); if(!f.exists()) { showAlert("Ripristino", "File non trovato."); return; } showAlert("Ripristino", "Dati caricati. Riavvia l'app."); } catch(Exception e) { showAlert("Ripristino", "Errore: " + e.getMessage()); } }
