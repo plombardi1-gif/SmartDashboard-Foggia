@@ -216,73 +216,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     // Verifica permessi root (SuperSU/API 14)
     private boolean checkRoot() {
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            java.io.OutputStream os = process.getOutputStream();
-            os.write("echo test\n".getBytes());
-            os.flush();
-            os.close();
-            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String result = br.readLine();
-            br.close();
-            process.waitFor();
-            return "test".equals(result);
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     // Verifica permessi root (SuperSU/API 14)
-    private boolean checkRoot() {
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            java.io.OutputStream os = process.getOutputStream();
-            os.write("echo test\n".getBytes());
-            os.flush();
-            os.close();
-            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String result = br.readLine();
-            br.close();
-            process.waitFor();
-            return "test".equals(result);
-        } catch (Exception e) {
-            return false;
-        }
     }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
 
     // ✅ Verifica permessi root (compatibile SuperSU/API 14)
-    private boolean checkRoot() {
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            java.io.OutputStream os = process.getOutputStream();
-            os.write("echo test\n".getBytes());
-            os.flush();
-            os.close();
-            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String result = br.readLine();
-            br.close();
-            process.waitFor();
-            return "test".equals(result);
-        } catch (Exception e) {
-            return false;
-        }
     }
-    private boolean checkRoot() {
-        try {
-            Process process = Runtime.getRuntime().exec("su");
-            java.io.OutputStream os = process.getOutputStream();
-            os.write("echo test\n".getBytes());
-            os.flush();
-            os.close();
-            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String result = br.readLine();
-            br.close();
-            process.waitFor();
-            return "test".equals(result);
-        } catch (Exception e) {
-            return false;
-        }
     }
     
     private void loadData() { try { String json = prefs.getString("todos","[]"); JSONArray arr = new JSONArray(json); todos = new ArrayList<>(); for(int i=0;i<arr.length();i++) { JSONObject obj=arr.getJSONObject(i); todos.add(new TodoItem(obj.getString("text"),obj.getBoolean("done"))); } } catch(Exception e) { todos=new ArrayList<>(); } eventsByDate = new HashMap<>(); dayEvents = new ArrayList<>(); try { String json=prefs.getString("events_map","{}"); JSONObject obj=new JSONObject(json); JSONArray keys=obj.names(); if(keys!=null) for(int i=0;i<keys.length();i++) { String date=keys.getString(i); JSONArray arr=obj.getJSONArray(date); ArrayList<EventItem> list=new ArrayList<>(); for(int j=0;j<arr.length();j++) { JSONObject evt=arr.getJSONObject(j); list.add(new EventItem(evt.optString("time",""),evt.getString("desc"),evt.optBoolean("done",false))); } eventsByDate.put(date,list); } } catch(Exception e) {} }
