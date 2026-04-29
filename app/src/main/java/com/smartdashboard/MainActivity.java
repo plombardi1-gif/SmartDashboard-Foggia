@@ -139,6 +139,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             setupFullScreen(); checkNameDay();
             if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
+            if(!checkRoot()) showAlert("Root Non Trovato", "Concedi permessi root a SuperSU per abilitare le funzioni avanzate.");
         } catch(Exception e) { e.printStackTrace(); showAlert("Errore Avvio", "Impossibile inizializzare. " + e.getMessage()); }
     }
 
@@ -214,6 +215,24 @@ public class MainActivity extends Activity implements SensorEventListener {
     private String getWeatherText(int code) { if(code==0) return "Sereno"; if(code==1) return "Principalmente sereno"; if(code==2) return "Parzialmente nuvoloso"; if(code==3) return "Nuvoloso"; if(code==45||code==48) return "Nebbia"; if(code>=51&&code<=55) return "Pioggerella"; if(code==56||code==57) return "Pioggerella ghiacciata"; if(code>=61&&code<=65) return "Pioggia"; if(code==66||code==67) return "Pioggia ghiacciata"; if(code>=71&&code<=75) return "Neve"; if(code==77) return "Gragnuola"; if(code>=80&&code<=82) return "Rovesci"; if(code==85||code==86) return "Nevicate"; if(code>=95) return "Temporale"; return "Variabile"; }
     private String getWindDirection(double deg) { if(deg>=337.5||deg<22.5) return "N"; if(deg<67.5) return "NE"; if(deg<112.5) return "E"; if(deg<157.5) return "SE"; if(deg<202.5) return "S"; if(deg<247.5) return "SW"; if(deg<292.5) return "W"; return "NW"; }
     private void startWeatherRefresh() { weatherHandler.postDelayed(() -> { loadWeather(); weatherHandler.postDelayed(this::startWeatherRefresh, 1800000); }, 1800000); }
+
+    // Verifica permessi root (SuperSU/API 14)
+    private boolean checkRoot() {
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            java.io.OutputStream os = process.getOutputStream();
+            os.write("echo test\n".getBytes());
+            os.flush();
+            os.close();
+            java.io.BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String result = br.readLine();
+            br.close();
+            process.waitFor();
+            return "test".equals(result);
+        } catch (Exception e) {
+            return false;
+        }
+    }
     private void showAlert(String t, String m) { try { new AlertDialog.Builder(this).setTitle(t).setMessage(m).setPositiveButton("OK",null).show(); } catch(Exception ignored) {} }
 
     // ✅ Verifica permessi root (compatibile SuperSU/API 14)

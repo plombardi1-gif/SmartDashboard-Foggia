@@ -5,6 +5,7 @@ plugins {
 android {
     namespace 'com.smartdashboard'
     namespace 'com.smartdashboard'
+    namespace 'com.smartdashboard'
     compileSdkVersion 33
     defaultConfig {
         applicationId "com.smartdashboard"
