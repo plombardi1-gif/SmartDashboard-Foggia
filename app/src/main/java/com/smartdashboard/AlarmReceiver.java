@@ -2,7 +2,6 @@ package com.smartdashboard;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,17 +11,16 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Vibrator;
-import android.provider.Settings;
 
 public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            // 1. Vibra per 3 secondi
+            // Vibra per 3 secondi
             Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator != null) vibrator.vibrate(3000);
 
-            // 2. Suona una notifica di sistema (nessuna dipendenza Google)
+            // Suona notifica di sistema
             Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             MediaPlayer player = new MediaPlayer();
             player.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
@@ -33,7 +31,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 public void onCompletion(MediaPlayer mp) { mp.release(); }
             });
 
-            // 3. Mostra Dialog di Alert (Flag necessaria per aprire Activity da Background)
+            // Mostra dialog
             Intent dialogIntent = new Intent(context, AlarmDialogActivity.class);
             dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(dialogIntent);
@@ -44,22 +42,25 @@ public class AlarmReceiver extends BroadcastReceiver {
     }
 }
 
-// Activity "invisibile" per mostrare il dialogo
+// Activity per mostrare il dialog della sveglia
 class AlarmDialogActivity extends Activity {
     @Override
     protected void onCreate(android.os.Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
-            AlertDialog.Builder builder = new Builder(this);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("⏰ Promemoria!");
             builder.setMessage("Il tuo promemoria è scaduto.");
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
-                    finish(); // Chiude l'activity e torna alla dashboard
+                    finish();
                 }
             });
             builder.setCancelable(false);
             builder.create().show();
-        } catch (Exception e) { e.printStackTrace(); finish(); }
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+            finish(); 
+        }
     }
 }
